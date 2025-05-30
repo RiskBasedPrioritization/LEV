@@ -1,0 +1,22 @@
+# Create virtual environment
+python3 -m venv env
+
+# Activate new environment
+source env/bin/activate
+which python3
+
+# Install ipykernel
+pip3 install --upgrade pip
+
+pip3 install -r requirements.txt
+
+#deactivate virtual environment
+# deactivate
+
+
+
+# Git pre-commit hook to prevent committing large files
+pip install pre-commit
+pre-commit install
+pre-commit run check-added-large-files --all-files # manual test
+

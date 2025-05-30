@@ -1,0 +1,35 @@
+LEV CALCULATION SUMMARY (Original NIST LEV2)
+==================================================
+Calculation Date: 2025-05-30 22:46:23
+Date Range: 2024-01-01 to 2025-05-30
+Data: 2024-01-01 to 2025-05-30
+Calculation Time: 170.80 seconds
+Total CVEs analyzed: 292,351
+Expected number of exploited vulnerabilities: 36687.40
+Expected proportion of exploited vulnerabilities: 0.1255 (12.55%)
+
+LEV Probability Distribution:
+Mean: 0.125491
+Median: 0.025249
+Max: 1.000000
+Min: 0.000002
+Standard Deviation: 0.244711
+
+High Probability Analysis:
+CVEs with LEV > 0.5: 25667
+CVEs with LEV > 0.1: 67471
+CVEs with LEV > 0.01: 216011
+
+Top 10 highest LEV probabilities:
+  CVE-2020-15227: LEV=1.0000, Peak EPSS=0.9731
+  CVE-2007-2139: LEV=1.0000, Peak EPSS=0.9555
+  CVE-2001-0925: LEV=1.0000, Peak EPSS=0.9479
+  CVE-2015-5986: LEV=1.0000, Peak EPSS=0.9581
+  CVE-2004-0597: LEV=1.0000, Peak EPSS=0.9641
+  CVE-2012-0011: LEV=1.0000, Peak EPSS=0.9660
+  CVE-2007-0981: LEV=1.0000, Peak EPSS=0.9700
+  CVE-2013-0019: LEV=1.0000, Peak EPSS=0.9475
+  CVE-2016-3386: LEV=1.0000, Peak EPSS=0.9436
+  CVE-2009-2510: LEV=1.0000, Peak EPSS=0.9628
+
+==================================================
