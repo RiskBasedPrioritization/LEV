@@ -107,6 +107,12 @@ This will:
 6. Display detailed performance metrics and summary statistics
 7. Create timestamped log files in the `logs/` directory
 
+## Implementation Notes
+
+1. Any CVE present in the CISA CSV is treated as “in KEV now,” ignoring whether it was added to the KEV list after the calculation date. The paper does not require tracking “when” a CVE entered KEV; so simply treat the current CSV as “truth as of now.”
+2. NVD data is not downloaded or processed i.e. the code does not fetch CVE publish dates, descriptions, or CPE triples from the NVD.
+
+
 ## Configuration
 
 ### Date Range Selection

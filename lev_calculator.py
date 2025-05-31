@@ -65,10 +65,7 @@ class OptimizedLEVCalculator:
         self.kev_data = set()  # Set of CVE IDs that are in KEV list
         self.max_workers = max_workers or min(8, mp.cpu_count())
         self.logger = logger or logging.getLogger(__name__)
-        
-        # Pre-compute common values for rigorous calculation
-        self._daily_prob_cache = {}  # Cache for daily probability calculations
-        
+               
     def _precompute_daily_probabilities(self, epss_scores: np.ndarray, window_size: int = 30) -> np.ndarray:
         """Vectorized computation of daily probabilities from 30-day EPSS scores."""
         # Handle edge cases
@@ -450,6 +447,9 @@ class OptimizedLEVCalculator:
                 return date
         return None
     
+    # When a date’s file is missing for a particular CVE, get_epss_score() scans forward up to 30 days to find the next
+    # day on which that CVE appears. If it still doesn’t find anything, it falls back to the closest previous date.
+    # The paper says “use next available day” without mentioning a search limit; the code’s 30-day cap is a practical guard.
     def get_epss_score(self, cve: str, date: datetime) -> float:
         """Get EPSS score for a CVE on a specific date.
         
@@ -589,7 +589,11 @@ class OptimizedLEVCalculator:
             return self._calculate_lev_rigorous_optimized(cve, d0, dn)
         else:
             return self._calculate_lev_nist_original(cve, d0, dn)
-    
+        
+        
+    #according to NIST CSWP 41 Section 6's example with CVE-2023-1730 
+    #   Raw EPSS on 2024-11-22: 0.08 (21-day window remaining)
+    #   Effective 30-day equivalent: 0.08 × (21/30) = 0.056 ≈ 0.06
     def _process_cve_batch(self, cve_batch: List[str], calculation_date: datetime, rigorous: bool) -> List[Dict]:
         """Process a batch of CVEs for parallel computation."""
         results = []
@@ -604,27 +608,42 @@ class OptimizedLEVCalculator:
                 # Calculate LEV probability
                 lev_prob = self.calculate_lev(cve, d0, calculation_date, rigorous=rigorous)
                 
-                # Get peak EPSS information efficiently
-                peak_epss = 0.0
-                peak_date = None
+                # Get peak EPSS information with proper 30-day window adjustment
+                peak_epss_raw = 0.0
+                peak_epss_effective = 0.0
+                peak_date_raw = None
+                peak_date_effective = None
                 num_relevant_dates = 0
                 
                 # Only check dates where we have data for this CVE
                 for date in sorted(self.epss_data.keys()):
                     if d0 <= date <= calculation_date and cve in self.epss_data[date]:
-                        score = self.epss_data[date][cve]
+                        raw_p30 = self.epss_data[date][cve]
                         num_relevant_dates += 1
                         
-                        if score > peak_epss:
-                            peak_epss = score
-                            peak_date = date
+                        # Track peak raw EPSS score
+                        if raw_p30 > peak_epss_raw:
+                            peak_epss_raw = raw_p30
+                            peak_date_raw = date
+                        
+                        # Calculate effective 30-day equivalent for this window
+                        # window_length = min(30, (calculation_date - date).days + 1)
+                        window_length = min(30, (calculation_date - date).days + 1)
+                        effective_p30 = raw_p30 * (window_length / 30.0)
+                        
+                        # Track peak effective EPSS score
+                        if effective_p30 > peak_epss_effective:
+                            peak_epss_effective = effective_p30
+                            peak_date_effective = date
                 
                 results.append({
                     'cve': cve,
                     'first_epss_date': d0,
                     'lev_probability': lev_prob,
-                    'peak_epss_30day': peak_epss,
-                    'peak_epss_date': peak_date,
+                    'peak_epss_raw': peak_epss_raw,  # Maximum raw P30 score
+                    'peak_epss_30day': peak_epss_effective,  # Maximum effective 30-day equivalent
+                    'peak_epss_raw_date': peak_date_raw,
+                    'peak_epss_date': peak_date_effective,  # Date of peak effective score
                     'num_relevant_epss_dates': num_relevant_dates,
                 })
             except Exception as e:
