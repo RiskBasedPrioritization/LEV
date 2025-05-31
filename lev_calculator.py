@@ -463,7 +463,7 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
     
     # Define date range - using EPSS v3 era (from 2023-03-07 onwards)
-    start_date = datetime(2024, 1, 1)  # Adjust as needed
+    start_date = datetime(2023, 3, 7)  # Adjust as needed
     end_date = datetime.today()
     
     # Download EPSS data with parallel processing
