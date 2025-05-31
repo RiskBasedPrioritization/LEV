@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 Test script to verify the rigorous LEV calculation is working correctly.
-This helps debug why all rigorous LEV probabilities are returning 0.
 """
 
 import numpy as np

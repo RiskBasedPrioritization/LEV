@@ -2,7 +2,6 @@
 
 env
 tmp
-logs
 cache
 
 # Byte-compiled / optimized / DLL files
