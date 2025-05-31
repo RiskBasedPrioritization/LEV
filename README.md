@@ -62,7 +62,7 @@ This implementation includes a comprehensive test suite that validates complianc
 
 ```bash
 # Run all tests with coverage report
-PYTHONPATH=. python -m pytest test/ --cov=paste --cov-report=html
+PYTHONPATH=. python -m pytest test/ --cov=lev_calculator --cov-report=html
 
 # Run all tests with verbose output
 PYTHONPATH=. python -m pytest test/ -v --tb=short
@@ -468,7 +468,7 @@ Before submitting changes, run the full test suite:
 
 ```bash
 # Run mathematical validation tests
-PYTHONPATH=. python -m pytest test/ --cov=paste --cov-report=html
+PYTHONPATH=. python -m pytest test/ --cov=lev_calculator --cov-report=html
 
 # Run all tests with verbose output
 PYTHONPATH=. python -m pytest test/ -v --tb=short
