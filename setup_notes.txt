@@ -20,3 +20,13 @@ pip install pre-commit
 pre-commit install
 pre-commit run check-added-large-files --all-files # manual test
 
+
+
+bash# Temporarily disable the pre-commit hook
+mv .git/hooks/pre-commit .git/hooks/pre-commit.disabled
+# Now you can commit
+git commit -a
+
+Or commit with the hook bypassed:
+bash# Bypass pre-commit hooks for this commit
+git commit -a --no-verify
