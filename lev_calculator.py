@@ -181,6 +181,10 @@ class OptimizedLEVCalculator:
         total_records = sum(len(date_data) for date_data in self.epss_data.values())
         self.logger.info(f"Total EPSS records in memory: {total_records:,}")
     
+    # NIST.CSWP.41.pdf 10.3. EPSS Download and Data:
+    # "EPSS publishes the EPSS scores for all CVEs as zipped CSV files. There is one file per day, and
+    # unfortunately there are a few missing days. The LEV code uses the EPSS scores from the next
+    # available day when a day is missing."
     def _download_single_date(self, date: datetime) -> Optional[Tuple[Dict[str, float], bool]]:
         """Download EPSS data for a single date. Returns (data, was_cached) or None."""
         date_str = date.strftime("%Y-%m-%d")
@@ -729,6 +733,7 @@ def clear_individual_cache(cache_dir: str = "data_in"):
         logger.info(f"Cleared {len(files)} EPSS cache files from {cache_dir}")
     else:
         logger.info(f"No cache directory to clear at {cache_dir}")
+
 
 
 def download_epss_range(start_date: datetime = None, end_date: datetime = None, cache_dir: str = "data_in"):
