@@ -1,0 +1,293 @@
+2025-05-31 18:01:56,001 - INFO - Logging initialized. Log file: logs/20250531_180156.log
+2025-05-31 18:01:56,001 - INFO - Output directory: ./data_out
+2025-05-31 18:01:56,001 - INFO - Date range: 2023-03-07 to 2025-05-31
+2025-05-31 18:01:56,001 - INFO - Total days to process: 817
+2025-05-31 18:01:56,001 - INFO - Current UTC time: 2025-05-31 17:01:56 UTC
+2025-05-31 18:01:56,001 - INFO - Starting EPSS data download phase
+2025-05-31 18:01:56,001 - INFO - Loading EPSS scores from 2023-03-07 to 2025-05-31...
+2025-05-31 18:01:56,002 - INFO - Total dates to process: 817
+2025-05-31 18:02:01,209 - INFO - [LOAD] 6.1% - Processed 50/817 files (Success: 50, Missing: 0)
+2025-05-31 18:02:06,884 - INFO - [LOAD] 12.2% - Processed 100/817 files (Success: 100, Missing: 0)
+2025-05-31 18:02:12,247 - INFO - [LOAD] 18.4% - Processed 150/817 files (Success: 150, Missing: 0)
+2025-05-31 18:02:17,805 - INFO - [LOAD] 24.5% - Processed 200/817 files (Success: 200, Missing: 0)
+2025-05-31 18:02:23,888 - INFO - [LOAD] 30.6% - Processed 250/817 files (Success: 250, Missing: 0)
+2025-05-31 18:02:29,604 - INFO - [LOAD] 36.7% - Processed 300/817 files (Success: 300, Missing: 0)
+2025-05-31 18:02:35,321 - INFO - [LOAD] 42.8% - Processed 350/817 files (Success: 350, Missing: 0)
+2025-05-31 18:02:42,955 - INFO - [LOAD] 49.0% - Processed 400/817 files (Success: 400, Missing: 0)
+2025-05-31 18:02:49,234 - INFO - [LOAD] 55.1% - Processed 450/817 files (Success: 450, Missing: 0)
+2025-05-31 18:02:55,677 - INFO - [LOAD] 61.2% - Processed 500/817 files (Success: 500, Missing: 0)
+2025-05-31 18:03:02,119 - INFO - [LOAD] 67.3% - Processed 550/817 files (Success: 550, Missing: 0)
+2025-05-31 18:03:08,864 - INFO - [LOAD] 73.4% - Processed 600/817 files (Success: 600, Missing: 0)
+2025-05-31 18:03:14,060 - ERROR - Network error downloading 2024-12-01: 403 Client Error: Forbidden for url: https://epss.empiricalsecurity.com/epss_scores-2024-12-01.csv.gz
+2025-05-31 18:03:15,440 - INFO - [LOAD] 79.6% - Processed 650/817 files (Success: 649, Missing: 1)
+2025-05-31 18:03:22,735 - INFO - [LOAD] 85.7% - Processed 700/817 files (Success: 699, Missing: 1)
+2025-05-31 18:03:30,629 - INFO - [LOAD] 91.8% - Processed 750/817 files (Success: 749, Missing: 1)
+2025-05-31 18:03:38,382 - INFO - [LOAD] 97.9% - Processed 800/817 files (Success: 799, Missing: 1)
+2025-05-31 18:03:40,897 - INFO - Download completed. Statistics:
+2025-05-31 18:03:40,897 - INFO -   Total attempted: 817
+2025-05-31 18:03:40,897 - INFO -   Successful: 816
+2025-05-31 18:03:40,897 - INFO -   From cache: 816
+2025-05-31 18:03:40,897 - INFO -   Downloaded: 0
+2025-05-31 18:03:40,897 - INFO -   Missing days (404): 1
+2025-05-31 18:03:40,897 - INFO -   Failed (errors): 0
+2025-05-31 18:03:40,897 - INFO - NIST CSWP 41 missing-day handling: 1 missing days will use next-available-day logic in get_epss_score()
+2025-05-31 18:03:40,897 - INFO - Loaded 816 files covering 816 dates
+2025-05-31 18:03:40,899 - INFO - Total EPSS records in memory: 195,755,392
+2025-05-31 18:03:40,905 - INFO - Data loading completed in 104.90 seconds
+2025-05-31 18:03:40,905 - INFO - Loading KEV (Known Exploited Vulnerabilities) data
+2025-05-31 18:03:40,919 - INFO - Loaded 1352 CVEs from KEV list
+2025-05-31 18:03:40,919 - INFO - KEV file: data_in/known_exploited_vulnerabilities.csv (664.6 KB, modified: 2025-05-31 16:19:50)
+2025-05-31 18:03:40,920 - INFO - Running debug analysis on sample CVE
+2025-05-31 18:03:40,968 - INFO - Debug NIST for CVE-2006-3655:
+2025-05-31 18:03:40,968 - INFO -   cve: CVE-2006-3655
+2025-05-31 18:03:40,968 - INFO -   d0: 2023-03-07 00:00:00
+2025-05-31 18:03:40,969 - INFO -   calculation_date: 2025-05-31 00:00:00
+2025-05-31 18:03:40,969 - INFO -   total_days: 817
+2025-05-31 18:03:40,969 - INFO -   sample_dates: [datetime.datetime(2023, 3, 7, 0, 0), datetime.datetime(2023, 3, 8, 0, 0), datetime.datetime(2023, 3, 9, 0, 0), datetime.datetime(2023, 3, 10, 0, 0), datetime.datetime(2023, 3, 11, 0, 0)]
+2025-05-31 18:03:40,969 - INFO -   sample_epss_scores: [0.89151, 0.89151, 0.89151, 0.89151, 0.89151]
+2025-05-31 18:03:40,969 - INFO -   sample_daily_probs: [0.07136227251416016, 0.07136227251416016, 0.07136227251416016, 0.07136227251416016, 0.07136227251416016]
+2025-05-31 18:03:40,969 - INFO -   max_epss: 0.89151
+2025-05-31 18:03:40,969 - INFO -   max_daily_prob: 0.07136227251416016
+2025-05-31 18:03:40,969 - INFO -   lev_probability: 1.0
+2025-05-31 18:03:40,969 - INFO -   method: nist
+2025-05-31 18:03:40,969 - INFO - Debug Rigorous for CVE-2006-3655:
+2025-05-31 18:03:40,969 - INFO -   cve: CVE-2006-3655
+2025-05-31 18:03:40,969 - INFO -   d0: 2023-03-07 00:00:00
+2025-05-31 18:03:40,969 - INFO -   calculation_date: 2025-05-31 00:00:00
+2025-05-31 18:03:40,969 - INFO -   total_days: 817
+2025-05-31 18:03:40,969 - INFO -   sample_dates: [datetime.datetime(2023, 3, 7, 0, 0), datetime.datetime(2023, 3, 8, 0, 0), datetime.datetime(2023, 3, 9, 0, 0), datetime.datetime(2023, 3, 10, 0, 0), datetime.datetime(2023, 3, 11, 0, 0)]
+2025-05-31 18:03:40,969 - INFO -   sample_epss_scores: [0.89151, 0.89151, 0.89151, 0.89151, 0.89151]
+2025-05-31 18:03:40,969 - INFO -   sample_daily_probs: [0.07136227251416016, 0.07136227251416016, 0.07136227251416016, 0.07136227251416016, 0.07136227251416016]
+2025-05-31 18:03:40,969 - INFO -   max_epss: 0.89151
+2025-05-31 18:03:40,969 - INFO -   max_daily_prob: 0.07136227251416016
+2025-05-31 18:03:40,969 - INFO -   lev_probability: 1.0
+2025-05-31 18:03:40,969 - INFO -   method: rigorous
+2025-05-31 18:03:40,969 - INFO - Running composite probability analysis on sample CVE
+2025-05-31 18:03:40,971 - INFO - Composite NIST for CVE-2006-3655:
+2025-05-31 18:03:40,971 - INFO -   cve: CVE-2006-3655
+2025-05-31 18:03:40,971 - INFO -   calculation_date: 2025-05-31 00:00:00
+2025-05-31 18:03:40,971 - INFO -   epss_score: 0.64843
+2025-05-31 18:03:40,972 - INFO -   kev_score: 0.0
+2025-05-31 18:03:40,972 - INFO -   lev_score: 1.0
+2025-05-31 18:03:40,972 - INFO -   composite_probability: 1.0
+2025-05-31 18:03:40,972 - INFO -   method: nist
+2025-05-31 18:03:40,972 - INFO -   first_epss_date: 2023-03-07 00:00:00
+2025-05-31 18:03:40,972 - INFO -   is_in_kev: False
+2025-05-31 18:03:40,972 - INFO - Composite Rigorous for CVE-2006-3655:
+2025-05-31 18:03:40,972 - INFO -   cve: CVE-2006-3655
+2025-05-31 18:03:40,972 - INFO -   calculation_date: 2025-05-31 00:00:00
+2025-05-31 18:03:40,972 - INFO -   epss_score: 0.64843
+2025-05-31 18:03:40,972 - INFO -   kev_score: 0.0
+2025-05-31 18:03:40,972 - INFO -   lev_score: 1.0
+2025-05-31 18:03:40,972 - INFO -   composite_probability: 1.0
+2025-05-31 18:03:40,972 - INFO -   method: rigorous
+2025-05-31 18:03:40,972 - INFO -   first_epss_date: 2023-03-07 00:00:00
+2025-05-31 18:03:40,972 - INFO -   is_in_kev: False
+2025-05-31 18:03:40,972 - INFO - Starting NIST LEV2 calculation phase
+2025-05-31 18:03:40,972 - INFO - Calculating NIST LEV2 probabilities as of 2025-05-31...
+2025-05-31 18:04:02,659 - INFO - Found 293,324 unique CVEs in dataset
+2025-05-31 18:04:02,662 - INFO - Processing 293,324 CVEs in 33 batches using 8 workers...
+2025-05-31 18:05:37,275 - INFO - [PROGRESS] 9.1% - Completed 3/33 batches
+2025-05-31 18:05:38,628 - INFO - [PROGRESS] 18.2% - Completed 6/33 batches
+2025-05-31 18:06:42,895 - INFO - [PROGRESS] 27.3% - Completed 9/33 batches
+2025-05-31 18:06:45,198 - INFO - [PROGRESS] 36.4% - Completed 12/33 batches
+2025-05-31 18:06:47,891 - INFO - [PROGRESS] 45.5% - Completed 15/33 batches
+2025-05-31 18:07:57,283 - INFO - [PROGRESS] 54.5% - Completed 18/33 batches
+2025-05-31 18:08:00,948 - INFO - [PROGRESS] 63.6% - Completed 21/33 batches
+2025-05-31 18:08:02,352 - INFO - [PROGRESS] 72.7% - Completed 24/33 batches
+2025-05-31 18:09:10,248 - INFO - [PROGRESS] 81.8% - Completed 27/33 batches
+2025-05-31 18:09:11,726 - INFO - [PROGRESS] 90.9% - Completed 30/33 batches
+2025-05-31 18:09:12,381 - INFO - [PROGRESS] 100.0% - Completed 33/33 batches
+2025-05-31 18:09:12,382 - INFO - Completed processing 293,324 CVEs successfully
+2025-05-31 18:09:13,273 - INFO - NIST LEV2 calculation completed in 332.30 seconds
+2025-05-31 18:09:16,703 - INFO - Saved compressed NIST LEV2 results to ./data_out/lev_probabilities_nist_detailed.csv.gz
+2025-05-31 18:09:16,776 - INFO - Saved NIST LEV2 summary to ./data_out/lev_summary_nist.txt
+2025-05-31 18:09:16,776 - INFO - LEV CALCULATION SUMMARY (Original NIST LEV2)
+2025-05-31 18:09:16,776 - INFO - ==================================================
+2025-05-31 18:09:16,776 - INFO - Calculation Date: 2025-05-31 18:09:16
+2025-05-31 18:09:16,776 - INFO - Date Range: 2023-03-07 to 2025-05-31
+2025-05-31 18:09:16,777 - INFO - Data: 2023-03-07 to 2025-05-31
+2025-05-31 18:09:16,777 - INFO - Calculation Time: 332.30 seconds
+2025-05-31 18:09:16,777 - INFO - Total CVEs analyzed: 293,324
+2025-05-31 18:09:16,777 - INFO - Expected number of exploited vulnerabilities: 42968.06
+2025-05-31 18:09:16,777 - INFO - Expected proportion of exploited vulnerabilities: 0.1465 (14.65%)
+2025-05-31 18:09:16,777 - INFO - 
+2025-05-31 18:09:16,777 - INFO - LEV Probability Distribution:
+2025-05-31 18:09:16,777 - INFO - Mean: 0.146487
+2025-05-31 18:09:16,777 - INFO - Median: 0.033217
+2025-05-31 18:09:16,777 - INFO - Max: 1.000000
+2025-05-31 18:09:16,777 - INFO - Min: 0.000003
+2025-05-31 18:09:16,777 - INFO - Standard Deviation: 0.261471
+2025-05-31 18:09:16,777 - INFO - 
+2025-05-31 18:09:16,777 - INFO - High Probability Analysis:
+2025-05-31 18:09:16,777 - INFO - CVEs with LEV > 0.5: 30506
+2025-05-31 18:09:16,777 - INFO - CVEs with LEV > 0.1: 79519
+2025-05-31 18:09:16,777 - INFO - CVEs with LEV > 0.01: 241733
+2025-05-31 18:09:16,777 - INFO - 
+2025-05-31 18:09:16,777 - INFO - Top 10 highest LEV probabilities:
+2025-05-31 18:09:16,777 - INFO -   CVE-2014-0569: LEV=1.0000, Peak EPSS=0.9748
+2025-05-31 18:09:16,777 - INFO -   CVE-2011-1256: LEV=1.0000, Peak EPSS=0.9455
+2025-05-31 18:09:16,777 - INFO -   CVE-2021-25281: LEV=1.0000, Peak EPSS=0.9408
+2025-05-31 18:09:16,777 - INFO -   CVE-2007-5601: LEV=1.0000, Peak EPSS=0.9627
+2025-05-31 18:09:16,777 - INFO -   CVE-2016-0997: LEV=1.0000, Peak EPSS=0.9494
+2025-05-31 18:09:16,777 - INFO -   CVE-2005-1383: LEV=1.0000, Peak EPSS=0.9618
+2025-05-31 18:09:16,777 - INFO -   CVE-2010-0823: LEV=1.0000, Peak EPSS=0.9652
+2025-05-31 18:09:16,778 - INFO -   CVE-2009-0102: LEV=1.0000, Peak EPSS=0.9623
+2025-05-31 18:09:16,778 - INFO -   CVE-2012-0247: LEV=1.0000, Peak EPSS=0.8534
+2025-05-31 18:09:16,778 - INFO -   CVE-2017-2992: LEV=1.0000, Peak EPSS=0.9327
+2025-05-31 18:09:16,778 - INFO - 
+2025-05-31 18:09:16,778 - INFO - ==================================================
+2025-05-31 18:09:16,778 - INFO - Starting Rigorous LEV calculation phase
+2025-05-31 18:09:16,778 - INFO - Calculating Rigorous LEV probabilities as of 2025-05-31...
+2025-05-31 18:09:25,191 - INFO - Found 293,324 unique CVEs in dataset
+2025-05-31 18:09:25,194 - INFO - Processing 293,324 CVEs in 33 batches using 8 workers...
+2025-05-31 18:12:20,365 - INFO - [PROGRESS] 9.1% - Completed 3/33 batches
+2025-05-31 18:12:21,638 - INFO - [PROGRESS] 18.2% - Completed 6/33 batches
+2025-05-31 18:15:13,484 - INFO - [PROGRESS] 27.3% - Completed 9/33 batches
+2025-05-31 18:15:17,200 - INFO - [PROGRESS] 36.4% - Completed 12/33 batches
+2025-05-31 18:15:18,777 - INFO - [PROGRESS] 45.5% - Completed 15/33 batches
+2025-05-31 18:18:04,422 - INFO - [PROGRESS] 54.5% - Completed 18/33 batches
+2025-05-31 18:18:09,598 - INFO - [PROGRESS] 63.6% - Completed 21/33 batches
+2025-05-31 18:18:12,973 - INFO - [PROGRESS] 72.7% - Completed 24/33 batches
+2025-05-31 18:21:34,472 - INFO - [PROGRESS] 81.8% - Completed 27/33 batches
+2025-05-31 18:21:35,463 - INFO - [PROGRESS] 90.9% - Completed 30/33 batches
+2025-05-31 18:21:36,680 - INFO - [PROGRESS] 100.0% - Completed 33/33 batches
+2025-05-31 18:21:36,684 - INFO - Completed processing 293,324 CVEs successfully
+2025-05-31 18:21:38,441 - INFO - Rigorous LEV calculation completed in 741.66 seconds
+2025-05-31 18:21:42,171 - INFO - Saved compressed rigorous LEV results to ./data_out/lev_probabilities_rigorous_detailed.csv.gz
+2025-05-31 18:21:42,285 - INFO - Saved Rigorous LEV summary to ./data_out/lev_summary_rigorous.txt
+2025-05-31 18:21:42,285 - INFO - LEV CALCULATION SUMMARY (Rigorous Probabilistic)
+2025-05-31 18:21:42,285 - INFO - ==================================================
+2025-05-31 18:21:42,286 - INFO - Calculation Date: 2025-05-31 18:21:42
+2025-05-31 18:21:42,286 - INFO - Date Range: 2023-03-07 to 2025-05-31
+2025-05-31 18:21:42,286 - INFO - Data: 2023-03-07 to 2025-05-31
+2025-05-31 18:21:42,286 - INFO - Calculation Time: 741.66 seconds
+2025-05-31 18:21:42,286 - INFO - Total CVEs analyzed: 293,324
+2025-05-31 18:21:42,286 - INFO - Expected number of exploited vulnerabilities: 43641.56
+2025-05-31 18:21:42,286 - INFO - Expected proportion of exploited vulnerabilities: 0.1488 (14.88%)
+2025-05-31 18:21:42,286 - INFO - 
+2025-05-31 18:21:42,286 - INFO - LEV Probability Distribution:
+2025-05-31 18:21:42,286 - INFO - Mean: 0.148783
+2025-05-31 18:21:42,286 - INFO - Median: 0.032720
+2025-05-31 18:21:42,286 - INFO - Max: 1.000000
+2025-05-31 18:21:42,286 - INFO - Min: 0.000003
+2025-05-31 18:21:42,286 - INFO - Standard Deviation: 0.263314
+2025-05-31 18:21:42,286 - INFO - 
+2025-05-31 18:21:42,286 - INFO - High Probability Analysis:
+2025-05-31 18:21:42,286 - INFO - CVEs with LEV > 0.5: 31061
+2025-05-31 18:21:42,286 - INFO - CVEs with LEV > 0.1: 80758
+2025-05-31 18:21:42,286 - INFO - CVEs with LEV > 0.01: 243936
+2025-05-31 18:21:42,286 - INFO - 
+2025-05-31 18:21:42,286 - INFO - Top 10 highest LEV probabilities:
+2025-05-31 18:21:42,286 - INFO -   CVE-2015-6123: LEV=1.0000, Peak EPSS=0.9405
+2025-05-31 18:21:42,286 - INFO -   CVE-2004-1043: LEV=1.0000, Peak EPSS=0.9690
+2025-05-31 18:21:42,286 - INFO -   CVE-2009-3244: LEV=1.0000, Peak EPSS=0.8599
+2025-05-31 18:21:42,286 - INFO -   CVE-2006-4183: LEV=1.0000, Peak EPSS=0.9423
+2025-05-31 18:21:42,286 - INFO -   CVE-2008-0083: LEV=1.0000, Peak EPSS=0.9364
+2025-05-31 18:21:42,286 - INFO -   CVE-2016-3267: LEV=1.0000, Peak EPSS=0.9084
+2025-05-31 18:21:42,287 - INFO -   CVE-2012-3274: LEV=1.0000, Peak EPSS=0.9015
+2025-05-31 18:21:42,287 - INFO -   CVE-2008-3704: LEV=1.0000, Peak EPSS=0.9711
+2025-05-31 18:21:42,287 - INFO -   CVE-2013-0726: LEV=1.0000, Peak EPSS=0.9653
+2025-05-31 18:21:42,287 - INFO -   CVE-2014-2994: LEV=1.0000, Peak EPSS=0.8817
+2025-05-31 18:21:42,287 - INFO - 
+2025-05-31 18:21:42,287 - INFO - ==================================================
+2025-05-31 18:21:42,287 - INFO - Starting Composite Probability calculation phase
+2025-05-31 18:21:42,287 - INFO - Calculating composite probabilities using NIST LEV2 LEV method as of 2025-05-31...
+2025-05-31 18:21:51,061 - INFO - Found 293,324 CVEs in EPSS data and 1,352 in KEV list
+2025-05-31 18:21:51,061 - INFO - Total unique CVEs for composite calculation: 293,324
+2025-05-31 18:21:52,783 - INFO - [COMPOSITE] 3.4% - Processed 10,000/293,324 CVEs
+2025-05-31 18:21:54,450 - INFO - [COMPOSITE] 6.8% - Processed 20,000/293,324 CVEs
+2025-05-31 18:21:56,112 - INFO - [COMPOSITE] 10.2% - Processed 30,000/293,324 CVEs
+2025-05-31 18:21:57,850 - INFO - [COMPOSITE] 13.6% - Processed 40,000/293,324 CVEs
+2025-05-31 18:21:59,552 - INFO - [COMPOSITE] 17.0% - Processed 50,000/293,324 CVEs
+2025-05-31 18:22:01,301 - INFO - [COMPOSITE] 20.5% - Processed 60,000/293,324 CVEs
+2025-05-31 18:22:03,050 - INFO - [COMPOSITE] 23.9% - Processed 70,000/293,324 CVEs
+2025-05-31 18:22:04,747 - INFO - [COMPOSITE] 27.3% - Processed 80,000/293,324 CVEs
+2025-05-31 18:22:06,453 - INFO - [COMPOSITE] 30.7% - Processed 90,000/293,324 CVEs
+2025-05-31 18:22:08,162 - INFO - [COMPOSITE] 34.1% - Processed 100,000/293,324 CVEs
+2025-05-31 18:22:09,803 - INFO - [COMPOSITE] 37.5% - Processed 110,000/293,324 CVEs
+2025-05-31 18:22:11,526 - INFO - [COMPOSITE] 40.9% - Processed 120,000/293,324 CVEs
+2025-05-31 18:22:13,234 - INFO - [COMPOSITE] 44.3% - Processed 130,000/293,324 CVEs
+2025-05-31 18:22:14,928 - INFO - [COMPOSITE] 47.7% - Processed 140,000/293,324 CVEs
+2025-05-31 18:22:16,633 - INFO - [COMPOSITE] 51.1% - Processed 150,000/293,324 CVEs
+2025-05-31 18:22:18,433 - INFO - [COMPOSITE] 54.5% - Processed 160,000/293,324 CVEs
+2025-05-31 18:22:20,148 - INFO - [COMPOSITE] 58.0% - Processed 170,000/293,324 CVEs
+2025-05-31 18:22:21,850 - INFO - [COMPOSITE] 61.4% - Processed 180,000/293,324 CVEs
+2025-05-31 18:22:23,639 - INFO - [COMPOSITE] 64.8% - Processed 190,000/293,324 CVEs
+2025-05-31 18:22:25,341 - INFO - [COMPOSITE] 68.2% - Processed 200,000/293,324 CVEs
+2025-05-31 18:22:27,060 - INFO - [COMPOSITE] 71.6% - Processed 210,000/293,324 CVEs
+2025-05-31 18:22:28,794 - INFO - [COMPOSITE] 75.0% - Processed 220,000/293,324 CVEs
+2025-05-31 18:22:30,575 - INFO - [COMPOSITE] 78.4% - Processed 230,000/293,324 CVEs
+2025-05-31 18:22:32,329 - INFO - [COMPOSITE] 81.8% - Processed 240,000/293,324 CVEs
+2025-05-31 18:22:34,024 - INFO - [COMPOSITE] 85.2% - Processed 250,000/293,324 CVEs
+2025-05-31 18:22:35,727 - INFO - [COMPOSITE] 88.6% - Processed 260,000/293,324 CVEs
+2025-05-31 18:22:37,432 - INFO - [COMPOSITE] 92.0% - Processed 270,000/293,324 CVEs
+2025-05-31 18:22:39,103 - INFO - [COMPOSITE] 95.5% - Processed 280,000/293,324 CVEs
+2025-05-31 18:22:40,810 - INFO - [COMPOSITE] 98.9% - Processed 290,000/293,324 CVEs
+2025-05-31 18:22:41,399 - INFO - Completed composite probability calculation for 293,324 CVEs
+2025-05-31 18:22:41,739 - INFO - NIST composite probability calculation completed in 59.45 seconds
+2025-05-31 18:22:46,141 - INFO - Saved NIST composite probabilities to ./data_out/composite_probabilities_nist.csv.gz
+2025-05-31 18:22:46,141 - INFO - Calculating composite probabilities using Rigorous LEV method as of 2025-05-31...
+2025-05-31 18:22:53,810 - INFO - Found 293,324 CVEs in EPSS data and 1,352 in KEV list
+2025-05-31 18:22:53,810 - INFO - Total unique CVEs for composite calculation: 293,324
+2025-05-31 18:23:09,505 - INFO - [COMPOSITE] 3.4% - Processed 10,000/293,324 CVEs
+2025-05-31 18:23:26,980 - INFO - [COMPOSITE] 6.8% - Processed 20,000/293,324 CVEs
+2025-05-31 18:23:42,662 - INFO - [COMPOSITE] 10.2% - Processed 30,000/293,324 CVEs
+2025-05-31 18:23:58,658 - INFO - [COMPOSITE] 13.6% - Processed 40,000/293,324 CVEs
+2025-05-31 18:24:14,871 - INFO - [COMPOSITE] 17.0% - Processed 50,000/293,324 CVEs
+2025-05-31 18:24:31,056 - INFO - [COMPOSITE] 20.5% - Processed 60,000/293,324 CVEs
+2025-05-31 18:24:49,871 - INFO - [COMPOSITE] 23.9% - Processed 70,000/293,324 CVEs
+2025-05-31 18:25:08,861 - INFO - [COMPOSITE] 27.3% - Processed 80,000/293,324 CVEs
+2025-05-31 18:25:26,753 - INFO - [COMPOSITE] 30.7% - Processed 90,000/293,324 CVEs
+2025-05-31 18:25:43,321 - INFO - [COMPOSITE] 34.1% - Processed 100,000/293,324 CVEs
+2025-05-31 18:25:59,578 - INFO - [COMPOSITE] 37.5% - Processed 110,000/293,324 CVEs
+2025-05-31 18:26:15,188 - INFO - [COMPOSITE] 40.9% - Processed 120,000/293,324 CVEs
+2025-05-31 18:26:30,727 - INFO - [COMPOSITE] 44.3% - Processed 130,000/293,324 CVEs
+2025-05-31 18:26:46,563 - INFO - [COMPOSITE] 47.7% - Processed 140,000/293,324 CVEs
+2025-05-31 18:27:02,258 - INFO - [COMPOSITE] 51.1% - Processed 150,000/293,324 CVEs
+2025-05-31 18:27:17,820 - INFO - [COMPOSITE] 54.5% - Processed 160,000/293,324 CVEs
+2025-05-31 18:27:33,650 - INFO - [COMPOSITE] 58.0% - Processed 170,000/293,324 CVEs
+2025-05-31 18:27:47,648 - INFO - [COMPOSITE] 61.4% - Processed 180,000/293,324 CVEs
+2025-05-31 18:28:01,912 - INFO - [COMPOSITE] 64.8% - Processed 190,000/293,324 CVEs
+2025-05-31 18:28:16,757 - INFO - [COMPOSITE] 68.2% - Processed 200,000/293,324 CVEs
+2025-05-31 18:28:31,337 - INFO - [COMPOSITE] 71.6% - Processed 210,000/293,324 CVEs
+2025-05-31 18:28:45,767 - INFO - [COMPOSITE] 75.0% - Processed 220,000/293,324 CVEs
+2025-05-31 18:28:59,954 - INFO - [COMPOSITE] 78.4% - Processed 230,000/293,324 CVEs
+2025-05-31 18:29:14,645 - INFO - [COMPOSITE] 81.8% - Processed 240,000/293,324 CVEs
+2025-05-31 18:29:29,204 - INFO - [COMPOSITE] 85.2% - Processed 250,000/293,324 CVEs
+2025-05-31 18:29:44,335 - INFO - [COMPOSITE] 88.6% - Processed 260,000/293,324 CVEs
+2025-05-31 18:29:59,422 - INFO - [COMPOSITE] 92.0% - Processed 270,000/293,324 CVEs
+2025-05-31 18:30:13,275 - INFO - [COMPOSITE] 95.5% - Processed 280,000/293,324 CVEs
+2025-05-31 18:30:27,833 - INFO - [COMPOSITE] 98.9% - Processed 290,000/293,324 CVEs
+2025-05-31 18:30:32,794 - INFO - Completed composite probability calculation for 293,324 CVEs
+2025-05-31 18:30:33,502 - INFO - Rigorous composite probability calculation completed in 467.36 seconds
+2025-05-31 18:30:37,659 - INFO - Saved rigorous composite probabilities to ./data_out/composite_probabilities_rigorous.csv.gz
+2025-05-31 18:30:37,660 - INFO - COMPOSITE PROBABILITY SUMMARY (NIST LEV2):
+2025-05-31 18:30:37,660 - INFO - Total CVEs analyzed: 293,324
+2025-05-31 18:30:37,759 - INFO - CVEs in KEV list: 1,352
+2025-05-31 18:30:37,786 - INFO - CVEs with EPSS > 0: 280,743
+2025-05-31 18:30:37,801 - INFO - CVEs with LEV > 0: 293,324
+2025-05-31 18:30:37,805 - INFO - CVEs with Composite > 0.5: 30,864
+2025-05-31 18:30:37,814 - INFO - CVEs with Composite > 0.1: 79,730
+2025-05-31 18:30:37,821 - INFO - Mean composite probability: 0.147691
+2025-05-31 18:30:37,821 - INFO - COMPOSITE PROBABILITY SUMMARY (Rigorous):
+2025-05-31 18:30:37,821 - INFO - Total CVEs analyzed: 293,324
+2025-05-31 18:30:37,823 - INFO - CVEs in KEV list: 1,352
+2025-05-31 18:30:37,845 - INFO - CVEs with EPSS > 0: 280,743
+2025-05-31 18:30:37,858 - INFO - CVEs with LEV > 0: 293,324
+2025-05-31 18:30:37,862 - INFO - CVEs with Composite > 0.5: 31,382
+2025-05-31 18:30:37,870 - INFO - CVEs with Composite > 0.1: 80,929
+2025-05-31 18:30:37,870 - INFO - Mean composite probability: 0.149855
+2025-05-31 18:30:37,870 - INFO - PERFORMANCE SUMMARY:
+2025-05-31 18:30:37,871 - INFO - Total execution time: 1721.87 seconds
+2025-05-31 18:30:37,871 - INFO - Data loading: 104.90s (6.1%)
+2025-05-31 18:30:37,871 - INFO - NIST LEV2 calculation: 332.30s (19.3%)
+2025-05-31 18:30:37,871 - INFO - Rigorous LEV calculation: 741.66s (43.1%)
+2025-05-31 18:30:37,871 - INFO - NIST composite calculation: 59.45s (3.5%)
+2025-05-31 18:30:37,871 - INFO - Rigorous composite calculation: 467.36s (27.1%)
+2025-05-31 18:30:37,871 - INFO - Rigorous vs NIST time ratio: 2.23x
+2025-05-31 18:30:37,871 - INFO - METHOD COMPARISON:
+2025-05-31 18:30:37,871 - INFO - NIST LEV2 expected exploited: 42968.06
+2025-05-31 18:30:37,871 - INFO - Rigorous expected exploited: 43641.56
+2025-05-31 18:30:37,872 - INFO - Difference: +673.50 vulnerabilities (+1.57%)
+2025-05-31 18:30:37,872 - INFO - LEV calculation completed successfully
