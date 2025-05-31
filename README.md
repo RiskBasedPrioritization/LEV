@@ -1,13 +1,13 @@
 # Optimized Likely Exploited Vulnerabilities (LEV) Calculator
 
-A high-performance Python implementation of the: 
+A high-performance Python implementation of: 
 
   - Mell P, Spring J (2025) [NIST CSWP 41: "Likely Exploited Vulnerabilities: A Proposed Metric for Vulnerability Exploitation Probability"](https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.41.pdf). (National Institute of Standards and Technology, Gaithersburg, MD), NIST Cybersecurity White Paper (CSWP) NIST CSWP 41. https://doi.org/10.6028/NIST.CSWP.41 
 
 > [!IMPORTANT]  
 > It is a "clean-room" implementation i.e. implemented from the whitepaper only as the source code and data use as part of the whitepaper are not available.
 > 
-> It is not endorsed or validated by, or associated with, the authors or their employers.
+> It is not endorsed or validated by, or associated with, the authors of White Paper NIST CSWP 41 or their employers.
 
 > [!TIP]  
 > This optimized version includes both the original NIST LEV2 approximation and a rigorous probabilistic implementation with significant performance improvements 
