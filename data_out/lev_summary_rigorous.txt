@@ -1,35 +1,35 @@
 LEV CALCULATION SUMMARY (Rigorous Probabilistic)
 ==================================================
-Calculation Date: 2025-05-31 12:18:28
+Calculation Date: 2025-05-31 15:07:23
 Date Range: 2023-03-07 to 2025-05-31
-Data: 2023-03-07 to 2025-05-30
-Calculation Time: 671.28 seconds
-Total CVEs analyzed: 293,246
-Expected number of exploited vulnerabilities: 43640.26
+Data: 2023-03-07 to 2025-05-31
+Calculation Time: 640.39 seconds
+Total CVEs analyzed: 293,324
+Expected number of exploited vulnerabilities: 43640.30
 Expected proportion of exploited vulnerabilities: 0.1488 (14.88%)
 
 LEV Probability Distribution:
-Mean: 0.148818
-Median: 0.032737
+Mean: 0.148778
+Median: 0.032720
 Max: 1.000000
 Min: 0.000003
-Standard Deviation: 0.263335
+Standard Deviation: 0.263312
 
 High Probability Analysis:
-CVEs with LEV > 0.5: 31058
+CVEs with LEV > 0.5: 31059
 CVEs with LEV > 0.1: 80755
 CVEs with LEV > 0.01: 243897
 
 Top 10 highest LEV probabilities:
-  CVE-2018-1000006: LEV=1.0000, Peak EPSS=0.9742
-  CVE-2008-2249: LEV=1.0000, Peak EPSS=0.9614
-  CVE-2013-6674: LEV=1.0000, Peak EPSS=0.9538
-  CVE-2016-0974: LEV=1.0000, Peak EPSS=0.9510
-  CVE-2013-6117: LEV=1.0000, Peak EPSS=0.9601
-  CVE-2010-3242: LEV=1.0000, Peak EPSS=0.9652
-  CVE-2019-17621: LEV=1.0000, Peak EPSS=0.9752
-  CVE-2009-1095: LEV=1.0000, Peak EPSS=0.9124
-  CVE-2004-1812: LEV=1.0000, Peak EPSS=0.8948
-  CVE-2015-1924: LEV=1.0000, Peak EPSS=0.9317
+  CVE-2014-3566: LEV=1.0000, Peak EPSS=0.9751
+  CVE-2023-48795: LEV=1.0000, Peak EPSS=0.9657
+  CVE-2015-3145: LEV=1.0000, Peak EPSS=0.9062
+  CVE-2014-2962: LEV=1.0000, Peak EPSS=0.9617
+  CVE-2014-2994: LEV=1.0000, Peak EPSS=0.8817
+  CVE-2014-0306: LEV=1.0000, Peak EPSS=0.9482
+  CVE-2006-4154: LEV=1.0000, Peak EPSS=0.9388
+  CVE-2013-0634: LEV=1.0000, Peak EPSS=0.9688
+  CVE-2014-5355: LEV=1.0000, Peak EPSS=0.9525
+  CVE-2010-3069: LEV=1.0000, Peak EPSS=0.9466
 
 ==================================================

@@ -5,6 +5,7 @@ import gzip
 import io
 import os
 import time
+import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Tuple, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -15,17 +16,42 @@ from functools import partial
 output_dir = "./data_out"
 
 
+def setup_logging():
+    """Set up logging to both file and console."""
+    # Create logs directory if it doesn't exist
+    os.makedirs("logs", exist_ok=True)
+    
+    # Create timestamp for log filename
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_filename = f"logs/{timestamp}.log"
+    
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(log_filename, encoding='utf-8'),
+            logging.StreamHandler()  # Also log to console
+        ]
+    )
+    
+    logger = logging.getLogger(__name__)
+    logger.info(f"Logging initialized. Log file: {log_filename}")
+    return logger
+
+
 class OptimizedLEVCalculator:
     """
     Optimized implementation of the Likely Exploited Vulnerabilities (LEV) metric
     as described in NIST CSWP 41, with rigorous probabilistic calculations.
     """
     
-    def __init__(self, cache_dir: str = "data_in", max_workers: int = None):
+    def __init__(self, cache_dir: str = "data_in", max_workers: int = None, logger: logging.Logger = None):
         self.cache_dir = cache_dir
         os.makedirs(cache_dir, exist_ok=True)
         self.epss_data = {}  # {date: {cve: epss_score}}
         self.max_workers = max_workers or min(8, mp.cpu_count())
+        self.logger = logger or logging.getLogger(__name__)
         
         # Pre-compute common values for rigorous calculation
         self._daily_prob_cache = {}  # Cache for daily probability calculations
@@ -62,8 +88,9 @@ class OptimizedLEVCalculator:
             # Calculate daily probability
             try:
                 daily_probs[mask_normal] = 1.0 - np.power(complement, 1.0/window_size)
-            except (OverflowError, FloatingPointError):
+            except (OverflowError, FloatingPointError) as e:
                 # Fallback for numerical issues
+                self.logger.warning(f"Numerical issue in daily probability calculation: {e}. Using fallback approximation.")
                 daily_probs[mask_normal] = normal_scores / window_size
         
         # Ensure all results are valid probabilities
@@ -73,7 +100,7 @@ class OptimizedLEVCalculator:
 
     def download_epss_data(self, start_date: datetime, end_date: datetime):
         """Download EPSS data for the specified date range with parallel processing."""
-        print(f"Loading EPSS scores from {start_date.date()} to {end_date.date()}...")
+        self.logger.info(f"Loading EPSS scores from {start_date.date()} to {end_date.date()}...")
         
         # Generate list of dates to process
         dates_to_process = []
@@ -81,6 +108,18 @@ class OptimizedLEVCalculator:
         while current_date <= end_date:
             dates_to_process.append(current_date)
             current_date += timedelta(days=1)
+        
+        self.logger.info(f"Total dates to process: {len(dates_to_process)}")
+        
+        # Track download statistics
+        download_stats = {
+            'attempted': 0,
+            'successful': 0,
+            'from_cache': 0,
+            'downloaded': 0,
+            'failed': 0,
+            'failed_dates': []
+        }
         
         # Use ThreadPoolExecutor for I/O bound operations
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
@@ -94,28 +133,56 @@ class OptimizedLEVCalculator:
             
             for future in as_completed(future_to_date):
                 date = future_to_date[future]
+                download_stats['attempted'] += 1
+                
                 try:
-                    data = future.result()
-                    if data is not None:
+                    result = future.result()
+                    if result is not None:
+                        data, was_cached = result
                         self.epss_data[date] = data
                         loaded_count += 1
+                        download_stats['successful'] += 1
+                        
+                        if was_cached:
+                            download_stats['from_cache'] += 1
+                        else:
+                            download_stats['downloaded'] += 1
+                    else:
+                        download_stats['failed'] += 1
+                        download_stats['failed_dates'].append(date.strftime('%Y-%m-%d'))
                     
                     # Progress indicator
-                    progress = loaded_count / total_days * 100
-                    if loaded_count % 10 == 0:  # Update every 10 files
-                        print(f"[LOAD] {progress:.1f}% - Loaded {loaded_count}/{total_days} files")
+                    progress = download_stats['attempted'] / total_days * 100
+                    if download_stats['attempted'] % 50 == 0:  # Update every 50 files
+                        self.logger.info(f"[LOAD] {progress:.1f}% - Processed {download_stats['attempted']}/{total_days} files "
+                                       f"(Success: {download_stats['successful']}, Failed: {download_stats['failed']})")
                         
                 except Exception as e:
-                    print(f"[ERROR] Failed to process {date.strftime('%Y-%m-%d')}: {e}")
+                    download_stats['failed'] += 1
+                    download_stats['failed_dates'].append(date.strftime('%Y-%m-%d'))
+                    self.logger.error(f"Failed to process {date.strftime('%Y-%m-%d')}: {e}")
         
-        print(f"[INFO] Loaded {loaded_count} files covering {len(self.epss_data)} dates")
+        # Log final download statistics
+        self.logger.info(f"Download completed. Statistics:")
+        self.logger.info(f"  Total attempted: {download_stats['attempted']}")
+        self.logger.info(f"  Successful: {download_stats['successful']}")
+        self.logger.info(f"  From cache: {download_stats['from_cache']}")
+        self.logger.info(f"  Downloaded: {download_stats['downloaded']}")
+        self.logger.info(f"  Failed: {download_stats['failed']}")
+        
+        if download_stats['failed_dates']:
+            self.logger.warning(f"Failed dates: {', '.join(download_stats['failed_dates'][:10])}")
+            if len(download_stats['failed_dates']) > 10:
+                self.logger.warning(f"... and {len(download_stats['failed_dates']) - 10} more")
+        
+        self.logger.info(f"Loaded {loaded_count} files covering {len(self.epss_data)} dates")
         
         # Print memory usage info
         total_records = sum(len(date_data) for date_data in self.epss_data.values())
-        print(f"[INFO] Total EPSS records in memory: {total_records:,}")
+        self.logger.info(f"Total EPSS records in memory: {total_records:,}")
     
-    def _download_single_date(self, date: datetime) -> Optional[Dict[str, float]]:
-        """Download EPSS data for a single date."""
+    def _download_single_date(self, date: datetime) -> Optional[Tuple[Dict[str, float], bool]]:
+        """Download EPSS data for a single date. Returns (data, was_cached) or None."""
         date_str = date.strftime("%Y-%m-%d")
         filename = f"epss_scores-{date_str}.csv.gz"
         cache_path = os.path.join(self.cache_dir, filename)
@@ -125,9 +192,12 @@ class OptimizedLEVCalculator:
                 # Load from existing file
                 with gzip.open(cache_path, 'rt') as f:
                     df = pd.read_csv(f, comment='#', usecols=["cve", "epss"])
+                return dict(zip(df['cve'], df['epss'])), True
             else:
                 # Download from remote if file doesn't exist
                 url = f"https://epss.empiricalsecurity.com/{filename}"
+                self.logger.debug(f"Downloading {url}")
+                
                 response = requests.get(url, timeout=30)
                 response.raise_for_status()
                 
@@ -140,11 +210,16 @@ class OptimizedLEVCalculator:
                     df = pd.read_csv(f, comment='#', usecols=["cve", "epss"])
                 
                 time.sleep(0.1)  # Be nice to the server
+                return dict(zip(df['cve'], df['epss'])), False
             
-            return dict(zip(df['cve'], df['epss']))
-            
+        except requests.exceptions.RequestException as e:
+            self.logger.error(f"Network error downloading {date_str}: {e}")
+            return None
+        except pd.errors.EmptyDataError as e:
+            self.logger.error(f"Empty data file for {date_str}: {e}")
+            return None
         except Exception as e:
-            print(f"[ERROR] Failed to process {date_str}: {e}")
+            self.logger.error(f"Unexpected error processing {date_str}: {e}")
             return None
     
     def get_loaded_date_range(self) -> Tuple[Optional[datetime], Optional[datetime]]:
@@ -282,37 +357,41 @@ class OptimizedLEVCalculator:
         results = []
         
         for cve in cve_batch:
-            # Find first EPSS date for this CVE
-            d0 = self.get_first_epss_date(cve)
-            if d0 is None:
+            try:
+                # Find first EPSS date for this CVE
+                d0 = self.get_first_epss_date(cve)
+                if d0 is None:
+                    continue
+                
+                # Calculate LEV probability
+                lev_prob = self.calculate_lev(cve, d0, calculation_date, rigorous=rigorous)
+                
+                # Get peak EPSS information efficiently
+                peak_epss = 0.0
+                peak_date = None
+                num_relevant_dates = 0
+                
+                # Only check dates where we have data for this CVE
+                for date in sorted(self.epss_data.keys()):
+                    if d0 <= date <= calculation_date and cve in self.epss_data[date]:
+                        score = self.epss_data[date][cve]
+                        num_relevant_dates += 1
+                        
+                        if score > peak_epss:
+                            peak_epss = score
+                            peak_date = date
+                
+                results.append({
+                    'cve': cve,
+                    'first_epss_date': d0,
+                    'lev_probability': lev_prob,
+                    'peak_epss_30day': peak_epss,
+                    'peak_epss_date': peak_date,
+                    'num_relevant_epss_dates': num_relevant_dates,
+                })
+            except Exception as e:
+                self.logger.error(f"Error processing CVE {cve}: {e}")
                 continue
-            
-            # Calculate LEV probability
-            lev_prob = self.calculate_lev(cve, d0, calculation_date, rigorous=rigorous)
-            
-            # Get peak EPSS information efficiently
-            peak_epss = 0.0
-            peak_date = None
-            num_relevant_dates = 0
-            
-            # Only check dates where we have data for this CVE
-            for date in sorted(self.epss_data.keys()):
-                if d0 <= date <= calculation_date and cve in self.epss_data[date]:
-                    score = self.epss_data[date][cve]
-                    num_relevant_dates += 1
-                    
-                    if score > peak_epss:
-                        peak_epss = score
-                        peak_date = date
-            
-            results.append({
-                'cve': cve,
-                'first_epss_date': d0,
-                'lev_probability': lev_prob,
-                'peak_epss_30day': peak_epss,
-                'peak_epss_date': peak_date,
-                'num_relevant_epss_dates': num_relevant_dates,
-            })
         
         return results
     
@@ -324,7 +403,7 @@ class OptimizedLEVCalculator:
             calculation_date = datetime.today()
         
         calc_type = "Rigorous LEV" if rigorous else "NIST LEV2"
-        print(f"[INFO] Calculating {calc_type} probabilities as of {calculation_date.date()}...")
+        self.logger.info(f"Calculating {calc_type} probabilities as of {calculation_date.date()}...")
         
         # Get all unique CVEs
         all_cves = set()
@@ -334,6 +413,8 @@ class OptimizedLEVCalculator:
         all_cves = list(all_cves)
         total_cves = len(all_cves)
         
+        self.logger.info(f"Found {total_cves:,} unique CVEs in dataset")
+        
         # Split CVEs into batches for parallel processing
         batch_size = max(100, total_cves // (self.max_workers * 4))  # Dynamic batch sizing
         cve_batches = [
@@ -341,11 +422,12 @@ class OptimizedLEVCalculator:
             for i in range(0, total_cves, batch_size)
         ]
         
-        print(f"[INFO] Processing {total_cves:,} CVEs in {len(cve_batches)} batches using {self.max_workers} workers...")
+        self.logger.info(f"Processing {total_cves:,} CVEs in {len(cve_batches)} batches using {self.max_workers} workers...")
         
         all_results = []
+        processing_errors = 0
         
-        # Use ProcessPoolExecutor for CPU-bound calculations
+        # Use ThreadPoolExecutor for CPU-bound calculations
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             # Submit all batches
             future_to_batch = {
@@ -364,12 +446,16 @@ class OptimizedLEVCalculator:
                     
                     if completed_batches % max(1, len(cve_batches) // 10) == 0:
                         progress = completed_batches / len(cve_batches) * 100
-                        print(f"[PROGRESS] {progress:.1f}% - Completed {completed_batches}/{len(cve_batches)} batches")
+                        self.logger.info(f"[PROGRESS] {progress:.1f}% - Completed {completed_batches}/{len(cve_batches)} batches")
                         
                 except Exception as e:
-                    print(f"[ERROR] Failed to process batch {batch_idx}: {e}")
+                    processing_errors += 1
+                    self.logger.error(f"Failed to process batch {batch_idx}: {e}")
         
-        print(f"[INFO] Completed processing {len(all_results):,} CVEs")
+        if processing_errors > 0:
+            self.logger.warning(f"Encountered {processing_errors} batch processing errors")
+        
+        self.logger.info(f"Completed processing {len(all_results):,} CVEs successfully")
         return pd.DataFrame(all_results)
     
     def debug_lev_calculation(self, cve: str, calculation_date: datetime = None, rigorous: bool = False) -> Dict:
@@ -416,18 +502,6 @@ class OptimizedLEVCalculator:
             "lev_probability": lev_prob,
             "method": "rigorous" if rigorous else "nist"
         }
-        """
-        Calculate Expected_Exploited metrics as described in Section 3.1.
-        """
-        total_cves = len(results_df)
-        expected_exploited = results_df['lev_probability'].sum()
-        proportion = expected_exploited / total_cves if total_cves > 0 else 0
-        
-        return {
-            'total_cves': total_cves,
-            'expected_exploited': expected_exploited,
-            'expected_exploited_proportion': proportion
-        }
 
     def calculate_expected_exploited(self, results_df: pd.DataFrame) -> Dict:
         """
@@ -453,61 +527,70 @@ class OptimizedLEVCalculator:
             'expected_exploited_proportion': proportion
         }
 
+
 def main():
-    """Main execution function with optimizations."""
-    # Initialize calculator with optimal worker count
-    calculator = OptimizedLEVCalculator()
+    """Main execution function with optimizations and logging."""
+    # Set up logging
+    logger = setup_logging()
     
-    # Create output directory
-    output_dir = "./data_out"
-    os.makedirs(output_dir, exist_ok=True)
-    
-    # Define date range - using EPSS v3 era (from 2023-03-07 onwards)
-    start_date = datetime(2023, 3, 7)  # Adjust as needed
-    end_date = datetime.today()
-    
-    # Download EPSS data with parallel processing
-    print(f"[INFO] Loading EPSS data from {start_date.date()} to {end_date.date()}")
-    start_time = time.time()
-    calculator.download_epss_data(start_date, end_date)
-    download_time = time.time() - start_time
-    print(f"[INFO] Data loading completed in {download_time:.2f} seconds")
-    
-    # Debug a specific CVE before full calculation
-    print("\n--- Debugging Sample CVE ---")
-    test_cve = "CVE-2006-3655"  # From the output showing high EPSS but zero LEV
-    debug_nist = calculator.debug_lev_calculation(test_cve, rigorous=False)
-    debug_rigorous = calculator.debug_lev_calculation(test_cve, rigorous=True)
-    
-    print(f"Debug NIST for {test_cve}:")
-    for key, value in debug_nist.items():
-        print(f"  {key}: {value}")
-    
-    print(f"\nDebug Rigorous for {test_cve}:")
-    for key, value in debug_rigorous.items():
-        print(f"  {key}: {value}")
-    
-    # --- Calculate LEV probabilities using the original NIST LEV2 formula ---
-    print("\n--- Calculating LEV probabilities using Original NIST LEV2 Formula ---")
-    nist_start_time = time.time()
-    nist_results_df = calculator.calculate_lev_for_all_cves(rigorous=False)
-    nist_calc_time = time.time() - nist_start_time
-    print(f"[INFO] NIST LEV2 calculation completed in {nist_calc_time:.2f} seconds")
-    
-    # Save NIST results
-    nist_output_data = nist_results_df[['cve', 'first_epss_date', 'lev_probability', 'peak_epss_30day', 'peak_epss_date', 'num_relevant_epss_dates']].copy()
-    nist_output_filename = f"lev_probabilities_nist_detailed.csv.gz"
-    nist_output_path = os.path.join(output_dir, nist_output_filename)
-    with gzip.open(nist_output_path, 'wt', encoding='utf-8') as f:
-        nist_output_data.to_csv(f, index=False)
-    print(f"[INFO] Saved compressed NIST LEV2 results to {nist_output_path}")
+    try:
+        # Initialize calculator with optimal worker count
+        calculator = OptimizedLEVCalculator(logger=logger)
+        
+        # Create output directory
+        output_dir = "./data_out"
+        os.makedirs(output_dir, exist_ok=True)
+        logger.info(f"Output directory: {output_dir}")
+        
+        # Define date range - using EPSS v3 era (from 2023-03-07 onwards)
+        start_date = datetime(2023, 3, 7)  # Adjust as needed
+        end_date = datetime.today()
+        
+        logger.info(f"Date range: {start_date.date()} to {end_date.date()}")
+        logger.info(f"Total days to process: {(end_date - start_date).days + 1}")
+        
+        # Download EPSS data with parallel processing
+        logger.info("Starting EPSS data download phase")
+        start_time = time.time()
+        calculator.download_epss_data(start_date, end_date)
+        download_time = time.time() - start_time
+        logger.info(f"Data loading completed in {download_time:.2f} seconds")
+        
+        # Debug a specific CVE before full calculation
+        logger.info("Running debug analysis on sample CVE")
+        test_cve = "CVE-2006-3655"  # From the output showing high EPSS but zero LEV
+        debug_nist = calculator.debug_lev_calculation(test_cve, rigorous=False)
+        debug_rigorous = calculator.debug_lev_calculation(test_cve, rigorous=True)
+        
+        logger.info(f"Debug NIST for {test_cve}:")
+        for key, value in debug_nist.items():
+            logger.info(f"  {key}: {value}")
+        
+        logger.info(f"Debug Rigorous for {test_cve}:")
+        for key, value in debug_rigorous.items():
+            logger.info(f"  {key}: {value}")
+        
+        # --- Calculate LEV probabilities using the original NIST LEV2 formula ---
+        logger.info("Starting NIST LEV2 calculation phase")
+        nist_start_time = time.time()
+        nist_results_df = calculator.calculate_lev_for_all_cves(rigorous=False)
+        nist_calc_time = time.time() - nist_start_time
+        logger.info(f"NIST LEV2 calculation completed in {nist_calc_time:.2f} seconds")
+        
+        # Save NIST results
+        nist_output_data = nist_results_df[['cve', 'first_epss_date', 'lev_probability', 'peak_epss_30day', 'peak_epss_date', 'num_relevant_epss_dates']].copy()
+        nist_output_filename = f"lev_probabilities_nist_detailed.csv.gz"
+        nist_output_path = os.path.join(output_dir, nist_output_filename)
+        with gzip.open(nist_output_path, 'wt', encoding='utf-8') as f:
+            nist_output_data.to_csv(f, index=False)
+        logger.info(f"Saved compressed NIST LEV2 results to {nist_output_path}")
 
-    # Generate NIST summary
-    nist_summary = calculator.calculate_expected_exploited(nist_results_df)
-    loaded_start, loaded_end = calculator.get_loaded_date_range()
-    data_info = f"Data: {loaded_start.date()} to {loaded_end.date()}" if loaded_start and loaded_end else "No data loaded"
+        # Generate NIST summary
+        nist_summary = calculator.calculate_expected_exploited(nist_results_df)
+        loaded_start, loaded_end = calculator.get_loaded_date_range()
+        data_info = f"Data: {loaded_start.date()} to {loaded_end.date()}" if loaded_start and loaded_end else "No data loaded"
 
-    nist_summary_text = f"""LEV CALCULATION SUMMARY (Original NIST LEV2)
+        nist_summary_text = f"""LEV CALCULATION SUMMARY (Original NIST LEV2)
 {'='*50}
 Calculation Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 Date Range: {start_date.date()} to {end_date.date()}
@@ -529,40 +612,43 @@ CVEs with LEV > 0.5: {len(nist_results_df[nist_results_df['lev_probability'] > 0
 CVEs with LEV > 0.1: {len(nist_results_df[nist_results_df['lev_probability'] > 0.1])}
 CVEs with LEV > 0.01: {len(nist_results_df[nist_results_df['lev_probability'] > 0.01])}
 """
-    
-    if len(nist_results_df) > 0:
-        nist_summary_text += "\nTop 10 highest LEV probabilities:\n"
-        top_10_nist = nist_results_df.nlargest(10, 'lev_probability')[['cve', 'lev_probability', 'peak_epss_30day']]
-        for _, row in top_10_nist.iterrows():
-            nist_summary_text += f"  {row['cve']}: LEV={row['lev_probability']:.4f}, Peak EPSS={row['peak_epss_30day']:.4f}\n"
-    
-    nist_summary_text += f"\n{'='*50}\n"
-    
-    nist_summary_path = os.path.join(output_dir, "lev_summary_nist.txt")
-    with open(nist_summary_path, 'w', encoding='utf-8') as f:
-        f.write(nist_summary_text)
-    print(f"[INFO] Saved NIST LEV2 summary to {nist_summary_path}")
-    print("\n" + nist_summary_text)
+        
+        if len(nist_results_df) > 0:
+            nist_summary_text += "\nTop 10 highest LEV probabilities:\n"
+            top_10_nist = nist_results_df.nlargest(10, 'lev_probability')[['cve', 'lev_probability', 'peak_epss_30day']]
+            for _, row in top_10_nist.iterrows():
+                nist_summary_text += f"  {row['cve']}: LEV={row['lev_probability']:.4f}, Peak EPSS={row['peak_epss_30day']:.4f}\n"
+        
+        nist_summary_text += f"\n{'='*50}\n"
+        
+        nist_summary_path = os.path.join(output_dir, "lev_summary_nist.txt")
+        with open(nist_summary_path, 'w', encoding='utf-8') as f:
+            f.write(nist_summary_text)
+        logger.info(f"Saved NIST LEV2 summary to {nist_summary_path}")
+        
+        # Log the summary (this will appear in both console and log file)
+        for line in nist_summary_text.strip().split('\n'):
+            logger.info(line)
 
-    # --- Calculate LEV probabilities using the Rigorous Probabilistic approach ---
-    print("\n--- Calculating LEV probabilities using Rigorous Probabilistic Approach ---")
-    rigorous_start_time = time.time()
-    rigorous_results_df = calculator.calculate_lev_for_all_cves(rigorous=True)
-    rigorous_calc_time = time.time() - rigorous_start_time
-    print(f"[INFO] Rigorous LEV calculation completed in {rigorous_calc_time:.2f} seconds")
+        # --- Calculate LEV probabilities using the Rigorous Probabilistic approach ---
+        logger.info("Starting Rigorous LEV calculation phase")
+        rigorous_start_time = time.time()
+        rigorous_results_df = calculator.calculate_lev_for_all_cves(rigorous=True)
+        rigorous_calc_time = time.time() - rigorous_start_time
+        logger.info(f"Rigorous LEV calculation completed in {rigorous_calc_time:.2f} seconds")
 
-    # Save rigorous results
-    rigorous_output_data = rigorous_results_df[['cve', 'first_epss_date', 'lev_probability', 'peak_epss_30day', 'peak_epss_date', 'num_relevant_epss_dates']].copy()
-    rigorous_output_filename = f"lev_probabilities_rigorous_detailed.csv.gz"
-    rigorous_output_path = os.path.join(output_dir, rigorous_output_filename)
-    with gzip.open(rigorous_output_path, 'wt', encoding='utf-8') as f:
-        rigorous_output_data.to_csv(f, index=False)
-    print(f"[INFO] Saved compressed rigorous LEV results to {rigorous_output_path}")
+        # Save rigorous results
+        rigorous_output_data = rigorous_results_df[['cve', 'first_epss_date', 'lev_probability', 'peak_epss_30day', 'peak_epss_date', 'num_relevant_epss_dates']].copy()
+        rigorous_output_filename = f"lev_probabilities_rigorous_detailed.csv.gz"
+        rigorous_output_path = os.path.join(output_dir, rigorous_output_filename)
+        with gzip.open(rigorous_output_path, 'wt', encoding='utf-8') as f:
+            rigorous_output_data.to_csv(f, index=False)
+        logger.info(f"Saved compressed rigorous LEV results to {rigorous_output_path}")
 
-    # Generate rigorous summary
-    rigorous_summary = calculator.calculate_expected_exploited(rigorous_results_df)
+        # Generate rigorous summary
+        rigorous_summary = calculator.calculate_expected_exploited(rigorous_results_df)
 
-    rigorous_summary_text = f"""LEV CALCULATION SUMMARY (Rigorous Probabilistic)
+        rigorous_summary_text = f"""LEV CALCULATION SUMMARY (Rigorous Probabilistic)
 {'='*50}
 Calculation Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 Date Range: {start_date.date()} to {end_date.date()}
@@ -584,54 +670,81 @@ CVEs with LEV > 0.5: {len(rigorous_results_df[rigorous_results_df['lev_probabili
 CVEs with LEV > 0.1: {len(rigorous_results_df[rigorous_results_df['lev_probability'] > 0.1])}
 CVEs with LEV > 0.01: {len(rigorous_results_df[rigorous_results_df['lev_probability'] > 0.01])}
 """
-    
-    if len(rigorous_results_df) > 0:
-        rigorous_summary_text += "\nTop 10 highest LEV probabilities:\n"
-        top_10_rigorous = rigorous_results_df.nlargest(10, 'lev_probability')[['cve', 'lev_probability', 'peak_epss_30day']]
-        for _, row in top_10_rigorous.iterrows():
-            rigorous_summary_text += f"  {row['cve']}: LEV={row['lev_probability']:.4f}, Peak EPSS={row['peak_epss_30day']:.4f}\n"
-    
-    rigorous_summary_text += f"\n{'='*50}\n"
-    
-    rigorous_summary_path = os.path.join(output_dir, "lev_summary_rigorous.txt")
-    with open(rigorous_summary_path, 'w', encoding='utf-8') as f:
-        f.write(rigorous_summary_text)
-    print(f"[INFO] Saved Rigorous LEV summary to {rigorous_summary_path}")
-    print("\n" + rigorous_summary_text)
+        
+        if len(rigorous_results_df) > 0:
+            rigorous_summary_text += "\nTop 10 highest LEV probabilities:\n"
+            top_10_rigorous = rigorous_results_df.nlargest(10, 'lev_probability')[['cve', 'lev_probability', 'peak_epss_30day']]
+            for _, row in top_10_rigorous.iterrows():
+                rigorous_summary_text += f"  {row['cve']}: LEV={row['lev_probability']:.4f}, Peak EPSS={row['peak_epss_30day']:.4f}\n"
+        
+        rigorous_summary_text += f"\n{'='*50}\n"
+        
+        rigorous_summary_path = os.path.join(output_dir, "lev_summary_rigorous.txt")
+        with open(rigorous_summary_path, 'w', encoding='utf-8') as f:
+            f.write(rigorous_summary_text)
+        logger.info(f"Saved Rigorous LEV summary to {rigorous_summary_path}")
+        
+        # Log the rigorous summary (this will appear in both console and log file)
+        for line in rigorous_summary_text.strip().split('\n'):
+            logger.info(line)
 
-    # Performance comparison
-    total_time = time.time() - start_time
-    print(f"\n[PERFORMANCE] Total execution time: {total_time:.2f} seconds")
-    print(f"[PERFORMANCE] Data loading: {download_time:.2f}s")
-    print(f"[PERFORMANCE] NIST LEV2 calculation: {nist_calc_time:.2f}s")
-    print(f"[PERFORMANCE] Rigorous LEV calculation: {rigorous_calc_time:.2f}s")
-    if nist_calc_time > 0:
-        print(f"[PERFORMANCE] Rigorous vs NIST time ratio: {rigorous_calc_time/nist_calc_time:.2f}x")
+        # Performance comparison
+        total_time = time.time() - start_time
+        logger.info(f"PERFORMANCE SUMMARY:")
+        logger.info(f"Total execution time: {total_time:.2f} seconds")
+        logger.info(f"Data loading: {download_time:.2f}s ({download_time/total_time*100:.1f}%)")
+        logger.info(f"NIST LEV2 calculation: {nist_calc_time:.2f}s ({nist_calc_time/total_time*100:.1f}%)")
+        logger.info(f"Rigorous LEV calculation: {rigorous_calc_time:.2f}s ({rigorous_calc_time/total_time*100:.1f}%)")
+        
+        if nist_calc_time > 0:
+            logger.info(f"Rigorous vs NIST time ratio: {rigorous_calc_time/nist_calc_time:.2f}x")
 
-    return nist_output_path, nist_summary_path, rigorous_output_path, rigorous_summary_path
+        # Log final comparison statistics
+        difference_exploited = rigorous_summary['expected_exploited'] - nist_summary['expected_exploited']
+        difference_percent = (difference_exploited / nist_summary['expected_exploited'] * 100) if nist_summary['expected_exploited'] > 0 else 0
+        
+        logger.info(f"METHOD COMPARISON:")
+        logger.info(f"NIST LEV2 expected exploited: {nist_summary['expected_exploited']:.2f}")
+        logger.info(f"Rigorous expected exploited: {rigorous_summary['expected_exploited']:.2f}")
+        logger.info(f"Difference: +{difference_exploited:.2f} vulnerabilities ({difference_percent:+.2f}%)")
+
+        logger.info("LEV calculation completed successfully")
+        return nist_output_path, nist_summary_path, rigorous_output_path, rigorous_summary_path
+
+    except Exception as e:
+        logger.error(f"Fatal error in main execution: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        raise
 
 
 def clear_individual_cache(cache_dir: str = "data_in"):
     """Utility function to clear individual EPSS files."""
+    logger = logging.getLogger(__name__)
+    
     if os.path.exists(cache_dir):
         files = [f for f in os.listdir(cache_dir) if f.startswith('epss_scores-') and f.endswith('.csv.gz')]
         for file in files:
             os.remove(os.path.join(cache_dir, file))
-        print(f"[INFO] Cleared {len(files)} EPSS cache files")
+        logger.info(f"Cleared {len(files)} EPSS cache files from {cache_dir}")
     else:
-        print("[INFO] No cache directory to clear")
+        logger.info(f"No cache directory to clear at {cache_dir}")
 
 
 def download_epss_range(start_date: datetime = None, end_date: datetime = None, cache_dir: str = "data_in"):
     """Utility function to pre-download EPSS files for a date range."""
+    logger = logging.getLogger(__name__)
+    
     if start_date is None:
         start_date = datetime(2023, 3, 7)  # EPSS v3 start
     if end_date is None:
         end_date = datetime.today()
     
-    calculator = OptimizedLEVCalculator(cache_dir)
+    logger.info(f"Pre-downloading EPSS data from {start_date.date()} to {end_date.date()}")
+    
+    calculator = OptimizedLEVCalculator(cache_dir, logger=logger)
     calculator.download_epss_data(start_date, end_date)
-    print("[INFO] EPSS download complete")
+    logger.info("EPSS download complete")
 
 
 if __name__ == "__main__":

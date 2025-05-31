@@ -1,19 +1,19 @@
 LEV CALCULATION SUMMARY (Original NIST LEV2)
 ==================================================
-Calculation Date: 2025-05-31 12:07:13
+Calculation Date: 2025-05-31 14:56:39
 Date Range: 2023-03-07 to 2025-05-31
-Data: 2023-03-07 to 2025-05-30
-Calculation Time: 309.75 seconds
-Total CVEs analyzed: 293,246
-Expected number of exploited vulnerabilities: 42967.78
+Data: 2023-03-07 to 2025-05-31
+Calculation Time: 263.71 seconds
+Total CVEs analyzed: 293,324
+Expected number of exploited vulnerabilities: 42967.79
 Expected proportion of exploited vulnerabilities: 0.1465 (14.65%)
 
 LEV Probability Distribution:
-Mean: 0.146525
+Mean: 0.146486
 Median: 0.033217
 Max: 1.000000
 Min: 0.000003
-Standard Deviation: 0.261495
+Standard Deviation: 0.261471
 
 High Probability Analysis:
 CVEs with LEV > 0.5: 30506
@@ -21,15 +21,15 @@ CVEs with LEV > 0.1: 79519
 CVEs with LEV > 0.01: 241725
 
 Top 10 highest LEV probabilities:
-  CVE-2010-0031: LEV=1.0000, Peak EPSS=0.9485
-  CVE-2008-4027: LEV=1.0000, Peak EPSS=0.9575
-  CVE-2011-0647: LEV=1.0000, Peak EPSS=0.9660
-  CVE-2009-2499: LEV=1.0000, Peak EPSS=0.9682
-  CVE-2014-0321: LEV=1.0000, Peak EPSS=0.8575
-  CVE-2013-1861: LEV=1.0000, Peak EPSS=0.9651
-  CVE-2017-11855: LEV=1.0000, Peak EPSS=0.8765
-  CVE-2022-2487: LEV=1.0000, Peak EPSS=0.9743
-  CVE-2013-3915: LEV=1.0000, Peak EPSS=0.9118
-  CVE-2017-2992: LEV=1.0000, Peak EPSS=0.9327
+  CVE-2018-20062: LEV=1.0000, Peak EPSS=0.9692
+  CVE-2010-1939: LEV=1.0000, Peak EPSS=0.9573
+  CVE-2016-9566: LEV=1.0000, Peak EPSS=0.9334
+  CVE-2009-1130: LEV=1.0000, Peak EPSS=0.9451
+  CVE-2019-0736: LEV=1.0000, Peak EPSS=0.9095
+  CVE-2006-1245: LEV=1.0000, Peak EPSS=0.9706
+  CVE-2018-0986: LEV=1.0000, Peak EPSS=0.9662
+  CVE-2016-4010: LEV=1.0000, Peak EPSS=0.9662
+  CVE-2012-1446: LEV=1.0000, Peak EPSS=0.9737
+  CVE-2009-0496: LEV=1.0000, Peak EPSS=0.9069
 
 ==================================================
