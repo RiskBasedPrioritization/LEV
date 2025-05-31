@@ -16,6 +16,18 @@ from functools import partial
 output_dir = "./data_out"
 
 
+def get_current_date_utc() -> datetime:
+    """Get current date in UTC, normalized to midnight for consistent date handling."""
+    utc_now = datetime.utcnow()
+    # Return date normalized to midnight UTC
+    return datetime.combine(utc_now.date(), datetime.min.time())
+
+
+def normalize_date(date: datetime) -> datetime:
+    """Normalize datetime to midnight for consistent date handling."""
+    return datetime.combine(date.date(), datetime.min.time())
+
+
 def setup_logging():
     """Set up logging to both file and console."""
     # Create logs directory if it doesn't exist
@@ -50,6 +62,7 @@ class OptimizedLEVCalculator:
         self.cache_dir = cache_dir
         os.makedirs(cache_dir, exist_ok=True)
         self.epss_data = {}  # {date: {cve: epss_score}}
+        self.kev_data = set()  # Set of CVE IDs that are in KEV list
         self.max_workers = max_workers or min(8, mp.cpu_count())
         self.logger = logger or logging.getLogger(__name__)
         
@@ -229,6 +242,200 @@ class OptimizedLEVCalculator:
             self.logger.error(f"Unexpected error processing {date_str}: {e}")
             return None
     
+    def download_kev_data(self, kev_url: str = None, kev_file_path: str = None):
+        """Download Known Exploited Vulnerabilities (KEV) data from CISA."""
+        if kev_url is None:
+            kev_url = "https://www.cisa.gov/sites/default/files/csv/known_exploited_vulnerabilities.csv"
+        
+        if kev_file_path is None:
+            kev_file_path = os.path.join(self.cache_dir, "known_exploited_vulnerabilities.csv")
+        
+        try:
+            self.logger.info(f"Downloading KEV data from {kev_url}")
+            response = requests.get(kev_url, timeout=60)
+            response.raise_for_status()
+            
+            # Save to file
+            with open(kev_file_path, 'wb') as f:
+                f.write(response.content)
+            
+            self.logger.info(f"Successfully downloaded KEV data to {kev_file_path}")
+            
+            # Verify the file format by reading a few lines
+            try:
+                kev_df = pd.read_csv(kev_file_path, nrows=5)
+                if 'cveID' in kev_df.columns:
+                    self.logger.info(f"KEV file format verified. Sample columns: {list(kev_df.columns)}")
+                else:
+                    self.logger.warning(f"KEV file may have unexpected format. Columns found: {list(kev_df.columns)}")
+            except Exception as e:
+                self.logger.warning(f"Could not verify KEV file format: {e}")
+                
+        except requests.exceptions.RequestException as e:
+            self.logger.error(f"Failed to download KEV data from {kev_url}: {e}")
+            raise
+        except Exception as e:
+            self.logger.error(f"Unexpected error downloading KEV data: {e}")
+            raise
+
+    def load_kev_data(self, kev_file_path: str = None, download_if_missing: bool = True):
+        """Load Known Exploited Vulnerabilities (KEV) data from CSV file."""
+        if kev_file_path is None:
+            kev_file_path = os.path.join(self.cache_dir, "known_exploited_vulnerabilities.csv")
+        
+        try:
+            # Check if file exists, download if missing and requested
+            if not os.path.exists(kev_file_path) and download_if_missing:
+                self.logger.info(f"KEV file not found at {kev_file_path}, downloading from CISA...")
+                self.download_kev_data(kev_file_path=kev_file_path)
+            
+            if os.path.exists(kev_file_path):
+                kev_df = pd.read_csv(kev_file_path)
+                
+                # Check if the expected column exists
+                if 'cveID' not in kev_df.columns:
+                    self.logger.error(f"KEV file does not contain 'cveID' column. Available columns: {list(kev_df.columns)}")
+                    self.kev_data = set()
+                    return
+                
+                # Load CVE IDs and normalize to uppercase
+                self.kev_data = set(kev_df['cveID'].str.upper())
+                
+                # Log some statistics
+                file_size = os.path.getsize(kev_file_path) / 1024  # KB
+                file_mtime = datetime.fromtimestamp(os.path.getmtime(kev_file_path))
+                
+                self.logger.info(f"Loaded {len(self.kev_data)} CVEs from KEV list")
+                self.logger.info(f"KEV file: {kev_file_path} ({file_size:.1f} KB, modified: {file_mtime.strftime('%Y-%m-%d %H:%M:%S')})")
+                
+                # Log some sample KEV entries for verification
+                sample_cves = list(self.kev_data)[:5]
+                self.logger.debug(f"Sample KEV entries: {sample_cves}")
+                
+            else:
+                self.logger.warning(f"KEV file not found: {kev_file_path}. Composite probability will not include KEV data.")
+                self.kev_data = set()
+                
+        except Exception as e:
+            self.logger.error(f"Error loading KEV data from {kev_file_path}: {e}")
+            self.kev_data = set()
+    
+    def is_in_kev(self, cve: str) -> bool:
+        """Check if a CVE is in the Known Exploited Vulnerabilities list."""
+        return cve.upper() in self.kev_data
+    
+    def get_kev_score(self, cve: str, date: datetime = None) -> float:
+        """Get KEV score for a CVE (1.0 if in KEV, 0.0 otherwise)."""
+        return 1.0 if self.is_in_kev(cve) else 0.0
+    
+    def calculate_composite_probability(self, cve: str, date: datetime = None, rigorous: bool = False) -> Dict:
+        """
+        Calculate Composite Probability as defined in NIST CSWP 41:
+        Composite_Probability(v, dn) = max(EPSS(v, dn), KEV(v, dn), LEV(v, d0, dn))
+        
+        Args:
+            cve (str): CVE identifier
+            date (datetime, optional): Calculation date (defaults to current UTC date)
+            rigorous (bool): Whether to use rigorous LEV calculation
+            
+        Returns:
+            Dict: Dictionary containing all component scores and composite result
+        """
+        if date is None:
+            date = get_current_date_utc()
+        else:
+            date = normalize_date(date)
+        
+        # Get EPSS score for the calculation date
+        epss_score = self.get_epss_score(cve, date)
+        
+        # Get KEV score
+        kev_score = self.get_kev_score(cve, date)
+        
+        # Get LEV score
+        d0 = self.get_first_epss_date(cve)
+        if d0 is not None:
+            lev_score = self.calculate_lev(cve, d0, date, rigorous=rigorous)
+        else:
+            lev_score = 0.0
+        
+        # Calculate composite probability as maximum of the three
+        composite_score = max(epss_score, kev_score, lev_score)
+        
+        return {
+            'cve': cve,
+            'calculation_date': date,
+            'epss_score': epss_score,
+            'kev_score': kev_score,
+            'lev_score': lev_score,
+            'composite_probability': composite_score,
+            'method': 'rigorous' if rigorous else 'nist',
+            'first_epss_date': d0,
+            'is_in_kev': self.is_in_kev(cve)
+        }
+    def calculate_composite_for_all_cves(self, calculation_date: datetime = None, rigorous: bool = False, include_lev_data: bool = True) -> pd.DataFrame:
+        """
+        Calculate composite probabilities for all CVEs.
+        
+        Args:
+            calculation_date (datetime, optional): Calculation date (defaults to today)
+            rigorous (bool): Whether to use rigorous LEV calculation
+            include_lev_data (bool): Whether to include detailed LEV data in results
+            
+        Returns:
+            pd.DataFrame: DataFrame with composite probabilities for all CVEs
+        """
+        if calculation_date is None:
+            calculation_date = datetime.today()
+        
+        calc_type = "Rigorous" if rigorous else "NIST LEV2"
+        self.logger.info(f"Calculating composite probabilities using {calc_type} LEV method as of {calculation_date.date()}...")
+        
+        # Get all unique CVEs from both EPSS data and KEV list
+        epss_cves = set()
+        for date_data in self.epss_data.values():
+            epss_cves.update(date_data.keys())
+        
+        all_cves = epss_cves.union(self.kev_data)
+        total_cves = len(all_cves)
+        
+        self.logger.info(f"Found {len(epss_cves):,} CVEs in EPSS data and {len(self.kev_data):,} in KEV list")
+        self.logger.info(f"Total unique CVEs for composite calculation: {total_cves:,}")
+        
+        results = []
+        processed = 0
+        
+        for cve in all_cves:
+            try:
+                composite_result = self.calculate_composite_probability(cve, calculation_date, rigorous)
+                
+                result_dict = {
+                    'cve': cve,
+                    'epss_score': composite_result['epss_score'],
+                    'kev_score': composite_result['kev_score'],
+                    'lev_score': composite_result['lev_score'],
+                    'composite_probability': composite_result['composite_probability'],
+                    'is_in_kev': composite_result['is_in_kev']
+                }
+                
+                # Optionally include detailed LEV data
+                if include_lev_data and composite_result['first_epss_date'] is not None:
+                    result_dict['first_epss_date'] = composite_result['first_epss_date']
+                
+                results.append(result_dict)
+                processed += 1
+                
+                if processed % 10000 == 0:
+                    progress = processed / total_cves * 100
+                    self.logger.info(f"[COMPOSITE] {progress:.1f}% - Processed {processed:,}/{total_cves:,} CVEs")
+                    
+            except Exception as e:
+                self.logger.error(f"Error calculating composite probability for CVE {cve}: {e}")
+                continue
+        
+        self.logger.info(f"Completed composite probability calculation for {len(results):,} CVEs")
+        return pd.DataFrame(results)
+
     def get_loaded_date_range(self) -> Tuple[Optional[datetime], Optional[datetime]]:
         """Get the date range of loaded data."""
         if not self.epss_data:
@@ -431,7 +638,9 @@ class OptimizedLEVCalculator:
         Calculate LEV probabilities for all CVEs using parallel processing.
         """
         if calculation_date is None:
-            calculation_date = datetime.today()
+            calculation_date = get_current_date_utc()
+        else:
+            calculation_date = normalize_date(calculation_date)
         
         calc_type = "Rigorous LEV" if rigorous else "NIST LEV2"
         self.logger.info(f"Calculating {calc_type} probabilities as of {calculation_date.date()}...")
@@ -494,7 +703,9 @@ class OptimizedLEVCalculator:
         Debug LEV calculation for a specific CVE to identify issues.
         """
         if calculation_date is None:
-            calculation_date = datetime.today()
+            calculation_date = get_current_date_utc()
+        else:
+            calculation_date = normalize_date(calculation_date)
         
         # Find first EPSS date
         d0 = self.get_first_epss_date(cve)
@@ -575,10 +786,11 @@ def main():
         
         # Define date range - using EPSS v3 era (from 2023-03-07 onwards)
         start_date = datetime(2023, 3, 7)  # Adjust as needed
-        end_date = datetime.today()
+        end_date = get_current_date_utc()
         
         logger.info(f"Date range: {start_date.date()} to {end_date.date()}")
         logger.info(f"Total days to process: {(end_date - start_date).days + 1}")
+        logger.info(f"Current UTC time: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
         
         # Download EPSS data with parallel processing
         logger.info("Starting EPSS data download phase")
@@ -586,6 +798,10 @@ def main():
         calculator.download_epss_data(start_date, end_date)
         download_time = time.time() - start_time
         logger.info(f"Data loading completed in {download_time:.2f} seconds")
+        
+        # Load KEV data (download if not present)
+        logger.info("Loading KEV (Known Exploited Vulnerabilities) data")
+        calculator.load_kev_data(download_if_missing=True)
         
         # Debug a specific CVE before full calculation
         logger.info("Running debug analysis on sample CVE")
@@ -599,6 +815,19 @@ def main():
         
         logger.info(f"Debug Rigorous for {test_cve}:")
         for key, value in debug_rigorous.items():
+            logger.info(f"  {key}: {value}")
+        
+        # Debug composite probability for the test CVE
+        logger.info("Running composite probability analysis on sample CVE")
+        composite_nist = calculator.calculate_composite_probability(test_cve, rigorous=False)
+        composite_rigorous = calculator.calculate_composite_probability(test_cve, rigorous=True)
+        
+        logger.info(f"Composite NIST for {test_cve}:")
+        for key, value in composite_nist.items():
+            logger.info(f"  {key}: {value}")
+        
+        logger.info(f"Composite Rigorous for {test_cve}:")
+        for key, value in composite_rigorous.items():
             logger.info(f"  {key}: {value}")
         
         # --- Calculate LEV probabilities using the original NIST LEV2 formula ---
@@ -719,6 +948,54 @@ CVEs with LEV > 0.01: {len(rigorous_results_df[rigorous_results_df['lev_probabil
         for line in rigorous_summary_text.strip().split('\n'):
             logger.info(line)
 
+        # --- Calculate Composite Probabilities ---
+        logger.info("Starting Composite Probability calculation phase")
+        
+        # Calculate composite probabilities using NIST LEV2
+        composite_nist_start_time = time.time()
+        composite_nist_df = calculator.calculate_composite_for_all_cves(rigorous=False, include_lev_data=False)
+        composite_nist_time = time.time() - composite_nist_start_time
+        logger.info(f"NIST composite probability calculation completed in {composite_nist_time:.2f} seconds")
+        
+        # Save NIST composite results
+        composite_nist_filename = "composite_probabilities_nist.csv.gz"
+        composite_nist_path = os.path.join(output_dir, composite_nist_filename)
+        with gzip.open(composite_nist_path, 'wt', encoding='utf-8') as f:
+            composite_nist_df.to_csv(f, index=False)
+        logger.info(f"Saved NIST composite probabilities to {composite_nist_path}")
+        
+        # Calculate composite probabilities using Rigorous LEV
+        composite_rigorous_start_time = time.time()
+        composite_rigorous_df = calculator.calculate_composite_for_all_cves(rigorous=True, include_lev_data=False)
+        composite_rigorous_time = time.time() - composite_rigorous_start_time
+        logger.info(f"Rigorous composite probability calculation completed in {composite_rigorous_time:.2f} seconds")
+        
+        # Save rigorous composite results
+        composite_rigorous_filename = "composite_probabilities_rigorous.csv.gz"
+        composite_rigorous_path = os.path.join(output_dir, composite_rigorous_filename)
+        with gzip.open(composite_rigorous_path, 'wt', encoding='utf-8') as f:
+            composite_rigorous_df.to_csv(f, index=False)
+        logger.info(f"Saved rigorous composite probabilities to {composite_rigorous_path}")
+        
+        # Generate composite probability summaries
+        logger.info("COMPOSITE PROBABILITY SUMMARY (NIST LEV2):")
+        logger.info(f"Total CVEs analyzed: {len(composite_nist_df):,}")
+        logger.info(f"CVEs in KEV list: {len(composite_nist_df[composite_nist_df['is_in_kev'] == True]):,}")
+        logger.info(f"CVEs with EPSS > 0: {len(composite_nist_df[composite_nist_df['epss_score'] > 0]):,}")
+        logger.info(f"CVEs with LEV > 0: {len(composite_nist_df[composite_nist_df['lev_score'] > 0]):,}")
+        logger.info(f"CVEs with Composite > 0.5: {len(composite_nist_df[composite_nist_df['composite_probability'] > 0.5]):,}")
+        logger.info(f"CVEs with Composite > 0.1: {len(composite_nist_df[composite_nist_df['composite_probability'] > 0.1]):,}")
+        logger.info(f"Mean composite probability: {composite_nist_df['composite_probability'].mean():.6f}")
+        
+        logger.info("COMPOSITE PROBABILITY SUMMARY (Rigorous):")
+        logger.info(f"Total CVEs analyzed: {len(composite_rigorous_df):,}")
+        logger.info(f"CVEs in KEV list: {len(composite_rigorous_df[composite_rigorous_df['is_in_kev'] == True]):,}")
+        logger.info(f"CVEs with EPSS > 0: {len(composite_rigorous_df[composite_rigorous_df['epss_score'] > 0]):,}")
+        logger.info(f"CVEs with LEV > 0: {len(composite_rigorous_df[composite_rigorous_df['lev_score'] > 0]):,}")
+        logger.info(f"CVEs with Composite > 0.5: {len(composite_rigorous_df[composite_rigorous_df['composite_probability'] > 0.5]):,}")
+        logger.info(f"CVEs with Composite > 0.1: {len(composite_rigorous_df[composite_rigorous_df['composite_probability'] > 0.1]):,}")
+        logger.info(f"Mean composite probability: {composite_rigorous_df['composite_probability'].mean():.6f}")
+
         # Performance comparison
         total_time = time.time() - start_time
         logger.info(f"PERFORMANCE SUMMARY:")
@@ -726,6 +1003,8 @@ CVEs with LEV > 0.01: {len(rigorous_results_df[rigorous_results_df['lev_probabil
         logger.info(f"Data loading: {download_time:.2f}s ({download_time/total_time*100:.1f}%)")
         logger.info(f"NIST LEV2 calculation: {nist_calc_time:.2f}s ({nist_calc_time/total_time*100:.1f}%)")
         logger.info(f"Rigorous LEV calculation: {rigorous_calc_time:.2f}s ({rigorous_calc_time/total_time*100:.1f}%)")
+        logger.info(f"NIST composite calculation: {composite_nist_time:.2f}s ({composite_nist_time/total_time*100:.1f}%)")
+        logger.info(f"Rigorous composite calculation: {composite_rigorous_time:.2f}s ({composite_rigorous_time/total_time*100:.1f}%)")
         
         if nist_calc_time > 0:
             logger.info(f"Rigorous vs NIST time ratio: {rigorous_calc_time/nist_calc_time:.2f}x")
@@ -740,12 +1019,78 @@ CVEs with LEV > 0.01: {len(rigorous_results_df[rigorous_results_df['lev_probabil
         logger.info(f"Difference: +{difference_exploited:.2f} vulnerabilities ({difference_percent:+.2f}%)")
 
         logger.info("LEV calculation completed successfully")
-        return nist_output_path, nist_summary_path, rigorous_output_path, rigorous_summary_path
+        return nist_output_path, nist_summary_path, rigorous_output_path, rigorous_summary_path, composite_nist_path, composite_rigorous_path
 
     except Exception as e:
         logger.error(f"Fatal error in main execution: {e}")
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
+        raise
+
+
+def download_kev_data_standalone(cache_dir: str = "data_in"):
+    """Standalone utility function to download KEV data."""
+    logger = logging.getLogger(__name__)
+    
+    os.makedirs(cache_dir, exist_ok=True)
+    kev_file_path = os.path.join(cache_dir, "known_exploited_vulnerabilities.csv")
+    kev_url = "https://www.cisa.gov/sites/default/files/csv/known_exploited_vulnerabilities.csv"
+    
+    try:
+        logger.info(f"Downloading KEV data from CISA: {kev_url}")
+        response = requests.get(kev_url, timeout=60)
+        response.raise_for_status()
+        
+        with open(kev_file_path, 'wb') as f:
+            f.write(response.content)
+        
+        # Verify download
+        file_size = os.path.getsize(kev_file_path) / 1024  # KB
+        kev_df = pd.read_csv(kev_file_path, nrows=5)
+        
+        logger.info(f"Successfully downloaded KEV data ({file_size:.1f} KB)")
+        logger.info(f"File saved to: {kev_file_path}")
+        logger.info(f"Sample columns: {list(kev_df.columns)}")
+        
+        # Get total count
+        full_df = pd.read_csv(kev_file_path)
+        logger.info(f"Total KEV entries: {len(full_df)}")
+        
+    except Exception as e:
+        logger.error(f"Failed to download KEV data: {e}")
+        raise
+
+
+def download_kev_data_standalone(cache_dir: str = "data_in"):
+    """Standalone utility function to download KEV data."""
+    logger = logging.getLogger(__name__)
+    
+    os.makedirs(cache_dir, exist_ok=True)
+    kev_file_path = os.path.join(cache_dir, "known_exploited_vulnerabilities.csv")
+    kev_url = "https://www.cisa.gov/sites/default/files/csv/known_exploited_vulnerabilities.csv"
+    
+    try:
+        logger.info(f"Downloading KEV data from CISA: {kev_url}")
+        response = requests.get(kev_url, timeout=60)
+        response.raise_for_status()
+        
+        with open(kev_file_path, 'wb') as f:
+            f.write(response.content)
+        
+        # Verify download
+        file_size = os.path.getsize(kev_file_path) / 1024  # KB
+        kev_df = pd.read_csv(kev_file_path, nrows=5)
+        
+        logger.info(f"Successfully downloaded KEV data ({file_size:.1f} KB)")
+        logger.info(f"File saved to: {kev_file_path}")
+        logger.info(f"Sample columns: {list(kev_df.columns)}")
+        
+        # Get total count
+        full_df = pd.read_csv(kev_file_path)
+        logger.info(f"Total KEV entries: {len(full_df)}")
+        
+    except Exception as e:
+        logger.error(f"Failed to download KEV data: {e}")
         raise
 
 
@@ -769,7 +1114,7 @@ def download_epss_range(start_date: datetime = None, end_date: datetime = None, 
     if start_date is None:
         start_date = datetime(2023, 3, 7)  # EPSS v3 start
     if end_date is None:
-        end_date = datetime.today()
+        end_date = get_current_date_utc()
     
     logger.info(f"Pre-downloading EPSS data from {start_date.date()} to {end_date.date()}")
     
