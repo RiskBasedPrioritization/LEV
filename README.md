@@ -59,13 +59,13 @@ pip install pandas numpy requests
 ### Command Line Usage
 
 ```bash
-python optimized_lev_calculator.py
+python lev_calculator.py
 ```
 
 ### Basic Usage via Python
 
 ```python
-from optimized_lev_calculator import OptimizedLEVCalculator
+from lev_calculator import OptimizedLEVCalculator
 from datetime import datetime
 
 # Initialize calculator with optimal performance settings
