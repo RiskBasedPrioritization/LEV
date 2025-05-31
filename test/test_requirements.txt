@@ -1,0 +1,12 @@
+# test_requirements.txt
+# Testing dependencies for LEV implementation
+pytest>=7.0.0
+pytest-mock>=3.6.1
+pytest-cov>=4.0.0
+pytest-xdist>=3.0.0  # For parallel test execution
+pytest-benchmark>=4.0.0  # For performance benchmarks
+numpy>=1.21.0
+pandas>=1.3.0
+requests>=2.25.0
+psutil>=5.8.0  # For memory testing
+mock>=4.0.0

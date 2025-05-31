@@ -54,6 +54,28 @@ pip install pandas numpy requests
 - numpy
 - requests
 
+## Testing
+
+This implementation includes a comprehensive test suite that validates compliance with NIST CSWP 41 specifications and mathematical correctness.
+
+### Quick Test Commands
+
+```bash
+# Run all tests with coverage report
+PYTHONPATH=. python -m pytest test/ --cov=paste --cov-report=html
+
+# Run all tests with verbose output
+PYTHONPATH=. python -m pytest test/ -v --tb=short
+```
+
+The test suite includes:
+- **94 comprehensive tests** validating mathematical formulas, NIST compliance, and real-world scenarios
+- **Mathematical validation** of all NIST CSWP 41 equations and properties
+- **Integration tests** for end-to-end workflows and data handling
+- **Performance benchmarks** and error handling validation
+
+For detailed test documentation and additional test commands, see [`test/README.md`](test/README.md).
+
 ## Usage
 
 ### Command Line Usage
@@ -109,7 +131,7 @@ This will:
 
 ## Implementation Notes
 
-1. Any CVE present in the CISA CSV is treated as “in KEV now,” ignoring whether it was added to the KEV list after the calculation date. The paper does not require tracking “when” a CVE entered KEV; so simply treat the current CSV as “truth as of now.”
+1. Any CVE present in the CISA CSV is treated as "in KEV now," ignoring whether it was added to the KEV list after the calculation date. The paper does not require tracking "when" a CVE entered KEV; so simply treat the current CSV as "truth as of now."
 2. NVD data is not downloaded or processed i.e. the code does not fetch CVE publish dates, descriptions, or CPE triples from the NVD.
 
 
@@ -317,22 +339,22 @@ Typical performance on modern hardware (8-core CPU, 16GB RAM):
 
 This implementation includes comprehensive validation tools to verify mathematical correctness and performance:
 
+### Test Suite
+
+The implementation includes a comprehensive test suite with 94 tests that validate:
+
+- **Mathematical Correctness**: All NIST CSWP 41 formulas and equations
+- **NIST Compliance**: Exact specification adherence including missing-day logic
+- **Integration Workflows**: End-to-end processing with real-world data patterns
+- **Performance Benchmarks**: Speed, memory usage, and scalability
+- **Error Handling**: Network failures, corrupted data, and edge cases
+- **Numerical Stability**: Extreme values and precision validation
+
+The test suite ensures 100% compliance with NIST CSWP 41 specifications and validates both calculation methods against mathematical properties.
+
 ### Approximation Error Analysis (p30.py)
 
 A utility script demonstrates the error introduced by the NIST LEV2 approximation P₁ ≈ P₃₀/30:
-
-### Test Suite (test_rigorous_calculation.py)
-
-Comprehensive unit tests verify:
-- Daily probability conversion accuracy
-- LEV calculation logic
-- Edge case handling (very small/large probabilities)
-- Numerical stability
-
-Run tests with:
-```bash
-python lev_calculator_test.py
-```
 
 ### Real-World Performance
 
@@ -446,7 +468,10 @@ Before submitting changes, run the full test suite:
 
 ```bash
 # Run mathematical validation tests
-python lev_calculator_test.py
+PYTHONPATH=. python -m pytest test/ --cov=paste --cov-report=html
+
+# Run all tests with verbose output
+PYTHONPATH=. python -m pytest test/ -v --tb=short
 
 # Analyze approximation errors
 python p30.py
