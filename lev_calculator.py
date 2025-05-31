@@ -118,6 +118,7 @@ class OptimizedLEVCalculator:
             'from_cache': 0,
             'downloaded': 0,
             'failed': 0,
+            'missing_days': 0,  # New: count missing days (404s)
             'failed_dates': []
         }
         
@@ -148,14 +149,16 @@ class OptimizedLEVCalculator:
                         else:
                             download_stats['downloaded'] += 1
                     else:
-                        download_stats['failed'] += 1
-                        download_stats['failed_dates'].append(date.strftime('%Y-%m-%d'))
+                        # This date is missing - not necessarily a failure
+                        download_stats['missing_days'] += 1
+                        # Only add to failed_dates if it's a real error, not just missing
+                        # We'll let the actual error logging determine what's a real failure
                     
                     # Progress indicator
                     progress = download_stats['attempted'] / total_days * 100
                     if download_stats['attempted'] % 50 == 0:  # Update every 50 files
                         self.logger.info(f"[LOAD] {progress:.1f}% - Processed {download_stats['attempted']}/{total_days} files "
-                                       f"(Success: {download_stats['successful']}, Failed: {download_stats['failed']})")
+                                       f"(Success: {download_stats['successful']}, Missing: {download_stats['missing_days']})")
                         
                 except Exception as e:
                     download_stats['failed'] += 1
@@ -168,12 +171,16 @@ class OptimizedLEVCalculator:
         self.logger.info(f"  Successful: {download_stats['successful']}")
         self.logger.info(f"  From cache: {download_stats['from_cache']}")
         self.logger.info(f"  Downloaded: {download_stats['downloaded']}")
-        self.logger.info(f"  Failed: {download_stats['failed']}")
+        self.logger.info(f"  Missing days (404): {download_stats['missing_days']}")
+        self.logger.info(f"  Failed (errors): {download_stats['failed']}")
         
         if download_stats['failed_dates']:
-            self.logger.warning(f"Failed dates: {', '.join(download_stats['failed_dates'][:10])}")
+            self.logger.warning(f"Failed dates (real errors): {', '.join(download_stats['failed_dates'][:10])}")
             if len(download_stats['failed_dates']) > 10:
                 self.logger.warning(f"... and {len(download_stats['failed_dates']) - 10} more")
+        
+        if download_stats['missing_days'] > 0:
+            self.logger.info(f"NIST CSWP 41 missing-day handling: {download_stats['missing_days']} missing days will use next-available-day logic in get_epss_score()")
         
         self.logger.info(f"Loaded {loaded_count} files covering {len(self.epss_data)} dates")
         
@@ -181,10 +188,6 @@ class OptimizedLEVCalculator:
         total_records = sum(len(date_data) for date_data in self.epss_data.values())
         self.logger.info(f"Total EPSS records in memory: {total_records:,}")
     
-    # NIST.CSWP.41.pdf 10.3. EPSS Download and Data:
-    # "EPSS publishes the EPSS scores for all CVEs as zipped CSV files. There is one file per day, and
-    # unfortunately there are a few missing days. The LEV code uses the EPSS scores from the next
-    # available day when a day is missing."
     def _download_single_date(self, date: datetime) -> Optional[Tuple[Dict[str, float], bool]]:
         """Download EPSS data for a single date. Returns (data, was_cached) or None."""
         date_str = date.strftime("%Y-%m-%d")
@@ -241,18 +244,42 @@ class OptimizedLEVCalculator:
         return None
     
     def get_epss_score(self, cve: str, date: datetime) -> float:
-        """Get EPSS score for a CVE on a specific date."""
+        """Get EPSS score for a CVE on a specific date.
+        
+        Implements NIST CSWP 41 Section 10.3 missing-day logic:
+        "The LEV code uses the EPSS scores from the next available day when a day is missing."
+        """
+        # First try the exact date
         if date in self.epss_data and cve in self.epss_data[date]:
             return self.epss_data[date][cve]
         
-        # If exact date not available, find the closest previous date
+        # If exact date not available, implement NIST missing-day logic
+        # "use the EPSS scores from the next available day when a day is missing"
+        
+        # Search forward for the next available day with this CVE's EPSS score
+        max_search_days = 30  # Reasonable limit to prevent infinite search
+        current_search_date = date
+        
+        for days_ahead in range(max_search_days):
+            search_date = current_search_date + timedelta(days=days_ahead)
+            
+            # Check if we have data for this date and this CVE
+            if search_date in self.epss_data and cve in self.epss_data[search_date]:
+                if days_ahead > 0:
+                    self.logger.debug(f"Using EPSS score from {search_date.strftime('%Y-%m-%d')} for CVE {cve} on missing date {date.strftime('%Y-%m-%d')}")
+                return self.epss_data[search_date][cve]
+        
+        # If we still haven't found data, fall back to the previous behavior:
+        # Find the closest previous date
         available_dates = [d for d in sorted(self.epss_data.keys()) if d <= date]
         if available_dates:
             closest_date = available_dates[-1]
             if cve in self.epss_data[closest_date]:
+                self.logger.debug(f"No forward EPSS data found for CVE {cve} on {date.strftime('%Y-%m-%d')}, using previous date {closest_date.strftime('%Y-%m-%d')}")
                 return self.epss_data[closest_date][cve]
         
-        return 0.0  # Default to 0 if no score available
+        # Default to 0 if no score available anywhere
+        return 0.0
     
     def _calculate_lev_rigorous_optimized(self, cve: str, d0: datetime, dn: datetime) -> float:
         """
@@ -733,7 +760,6 @@ def clear_individual_cache(cache_dir: str = "data_in"):
         logger.info(f"Cleared {len(files)} EPSS cache files from {cache_dir}")
     else:
         logger.info(f"No cache directory to clear at {cache_dir}")
-
 
 
 def download_epss_range(start_date: datetime = None, end_date: datetime = None, cache_dir: str = "data_in"):
