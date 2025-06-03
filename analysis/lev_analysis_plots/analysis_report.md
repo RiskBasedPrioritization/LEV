@@ -1,6 +1,6 @@
 # LEV Analysis Comprehensive Report
 
-**Generated on:** 2025-06-02 22:10:57
+**Generated on:** 2025-06-03 08:54:29
 
 ## Executive Summary
 
@@ -52,6 +52,7 @@ This scatter plot reveals the relationship between current EPSS scores and LEV p
 ![method_agreement_matrix](method_agreement_matrix.png)
 
 **Key Insights:**
+- HIGH EPSS: > 0.1, HIGH LEV: > 0.1
 - EPSS-LEV correlation: 0.695
 - CVEs identified by both methods (high agreement): 20,629
 - CVEs identified by either method (total coverage): 79,604
@@ -78,10 +79,9 @@ This scatter plot reveals the relationship between current EPSS scores and LEV p
 
 ## High-Risk CVE Analysis by Threshold
 
-### Summary Table
+### Summary 
 
-| Threshold | EPSS CVEs | LEV CVEs | Composite CVEs | LEV KEV Recall |
-|-----------|-----------|----------|----------------|----------------|
+
 #### Threshold ≥ 0.1
 
 - **EPSS High-Risk CVEs:** 20,714 (7.06% of total)
@@ -244,6 +244,6 @@ The analysis demonstrates that:
 
 ---
 
-**Report Generation Completed:** 2025-06-02 22:11:02
+**Report Generation Completed:** 2025-06-03 08:54:36
 
 *This report was generated using the LEV Analysis and Visualization Suite. For questions or additional analysis requests, please refer to the methodology documentation.*

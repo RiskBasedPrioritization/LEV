@@ -58,19 +58,15 @@ class LEVAnalyzer:
         # Return simple markdown image reference
         return f"![{filename}]({filename}.png)\n\n"
     
-    def plot_epss_vs_lev_scatter(self, sample_size: int = 10000, figsize: tuple = (12, 8)):
+    def plot_epss_vs_lev_scatter(self, figsize: tuple = (12, 8)):
         """
         1. EPSS vs LEV scatter plot with KEV highlighting.
         
         Shows the relationship between current EPSS scores and LEV probabilities,
         with KEV CVEs highlighted in red.
         """
-        # Sample for visualization performance
-        if len(self.merged_df) > sample_size:
-            plot_df = self.merged_df.sample(n=sample_size, random_state=42)
-        else:
-            plot_df = self.merged_df.copy()
-        
+
+        plot_df = self.merged_df.copy()
         fig, ax = plt.subplots(figsize=figsize)
         
         # Plot non-KEV CVEs
@@ -519,6 +515,8 @@ This scatter plot reveals the relationship between current EPSS scores and LEV p
 """
                 elif filename == 'method_agreement_matrix':
                     report += f"""**Key Insights:**
+
+- HIGH EPSS: > 0.1, HIGH LEV: > 0.1
 - EPSS-LEV correlation: {stats['agreement']['epss_lev_correlation']:.3f}
 - CVEs identified by both methods (high agreement): {stats['agreement']['high_epss_and_high_lev']:,}
 - CVEs identified by either method (total coverage): {stats['agreement']['high_epss_or_high_lev']:,}
@@ -544,10 +542,7 @@ This scatter plot reveals the relationship between current EPSS scores and LEV p
 
 ## High-Risk CVE Analysis by Threshold
 
-### Summary Table
-
-| Threshold | EPSS CVEs | LEV CVEs | Composite CVEs | LEV KEV Recall |
-|-----------|-----------|----------|----------------|----------------|"""
+### Summary """
 
         for threshold in [0.1, 0.2, 0.5, 0.8]:
             epss_count = stats['high_risk_counts'][f'epss_{threshold}']
@@ -724,9 +719,9 @@ def example_usage():
     )
     
     # Generate individual plots if needed
-    fig1 = analyzer.plot_epss_vs_lev_scatter()
-    fig2 = analyzer.plot_lev_recall_curve()
-    fig3 = analyzer.plot_risk_quadrants()
+    #fig1 = analyzer.plot_epss_vs_lev_scatter()
+    #fig2 = analyzer.plot_lev_recall_curve()
+    #fig3 = analyzer.plot_risk_quadrants()
     
     # Generate comprehensive report with all plots and analysis
     stats = analyzer.create_comprehensive_report()
