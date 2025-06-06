@@ -230,7 +230,7 @@ class LEVAnalyzer:
         plt.tight_layout()
         return fig
     
-    def plot_temporal_evolution(self, sample_cves: int = 100, figsize: tuple = (12, 8)):
+    def plot_temporal_evolution(self, figsize: tuple = (12, 8)):
         """
         5. Temporal evolution: How LEV and peak EPSS relate over time.
         
@@ -244,11 +244,7 @@ class LEVAnalyzer:
         if len(df) == 0:
             print("No valid first_epss_date data found")
             return None
-        
-        # Sample for performance
-        if len(df) > sample_cves:
-            df = df.sample(n=sample_cves, random_state=42)
-        
+             
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, sharex=True)
         
         # Plot 1: LEV probability over time
@@ -262,7 +258,7 @@ class LEVAnalyzer:
         
         ax1.set_ylabel('LEV Probability')
         ax1.set_title('Temporal Evolution of Vulnerability Risk Scores')
-        ax1.legend()
+        ax1.legend(loc='upper right', frameon=True, fancybox=True, shadow=True)
         ax1.grid(True, alpha=0.3)
         
         # Plot 2: Peak EPSS over time
@@ -273,7 +269,7 @@ class LEVAnalyzer:
         
         ax2.set_xlabel('First EPSS Date')
         ax2.set_ylabel('Peak EPSS Score')
-        ax2.legend()
+        ax2.legend(loc='upper right', frameon=True, fancybox=True, shadow=True)
         ax2.grid(True, alpha=0.3)
         
         plt.tight_layout()
@@ -368,11 +364,11 @@ class LEVAnalyzer:
         ax.axvline(x=epss_threshold, color='gray', linestyle='--', alpha=0.7)
         
         # Add quadrant labels
-        ax.text(0.05, 0.95, 'Potentially\nUnderscored by EPSS', transform=ax.transAxes, 
+        ax.text(0.05, 0.98, 'Potentially\nUnderscored by EPSS', transform=ax.transAxes, 
                 bbox=dict(boxstyle="round,pad=0.3", facecolor="yellow", alpha=0.7))
-        ax.text(0.95, 0.05, 'Future Risk\n(Not Yet Exploited)', transform=ax.transAxes, ha='right',
+        ax.text(0.95, -0.15, 'Future Risk\n(Less Likely to have been Exploited according to LEV)', transform=ax.transAxes, ha='right',
                 bbox=dict(boxstyle="round,pad=0.3", facecolor="orange", alpha=0.7))
-        ax.text(0.95, 0.95, 'Critical Priority\n(High Current & Historical)', transform=ax.transAxes, ha='right',
+        ax.text(0.98, 0.98, 'Critical Priority\n(High Current & Historical)', transform=ax.transAxes, ha='right',
                 bbox=dict(boxstyle="round,pad=0.3", facecolor="red", alpha=0.7))
         
         ax.set_xlabel('Current EPSS Score')
@@ -660,7 +656,7 @@ The analysis demonstrates that:
 ### Plot 1: EPSS vs LEV Scatter
 - **Purpose:** Visualize relationship between current and historical risk indicators
 - **Insight:** Identifies complementary risk assessment capabilities
-- **Sample Size:** {min(10000, len(self.merged_df)):,} CVEs (sampled for performance)
+
 
 ### Plot 2: LEV Recall Curve
 - **Purpose:** Evaluate LEV's ability to capture known exploited vulnerabilities
@@ -680,7 +676,7 @@ The analysis demonstrates that:
 ### Plot 5: Temporal Evolution
 - **Purpose:** Analyze how risk scores relate to vulnerability discovery timing
 - **Insight:** Understanding temporal patterns in exploitation
-- **Sample Size:** {min(100, len(self.merged_df)):,} CVEs (sampled for clarity)
+
 
 ### Plot 6: Composite Effectiveness
 - **Purpose:** Demonstrate value of combined scoring methodology
