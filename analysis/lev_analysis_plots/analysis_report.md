@@ -209,10 +209,6 @@ The analysis demonstrates that:
 ### Plot 1: EPSS vs LEV Scatter
 - **Purpose:** Visualize relationship between current and historical risk indicators
 - **Insight:** Identifies complementary risk assessment capabilities
-<<<<<<< HEAD
-
-=======
->>>>>>> 82dbe2211165a55a1acfc01dfa88798b6f1d6d40
 
 ### Plot 2: LEV Recall Curve
 - **Purpose:** Evaluate LEV's ability to capture known exploited vulnerabilities
